@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Network Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Exo+2:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #f8f7f4;
+  --panel:   #ffffff;
+  --panel2:  #f3f1ec;
+  --border:  #ddd8cf;
+  --border2: #c8c0b4;
+  --green:   #0a7c3e;
+  --green2:  #0d9148;
+  --green3:  #11a854;
+  --green4:  #c8eed8;
+  --dim:     transparent;
+  --amber:   #b45309;
+  --amber2:  #d97706;
+  --red:     #c0392b;
+  --blue:    #1d6fa4;
+  --muted:   #7c6f60;
+  --muted2:  #a09080;
+  --text:    #1c1a17;
+  --text2:   #3d3830;
+  --scanline: transparent;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Share Tech Mono',monospace;
+  min-height:100vh;overflow-x:hidden;
+  cursor:default;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(10,124,62,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 35% at 15% 90%, rgba(29,111,164,0.05) 0%, transparent 55%);
+}
+/* subtle dot grid texture */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px);
+  background-size:28px 28px;
+}
+body::after{ content:''; }
+
+/* ── HEADER ── */
+header{
+  position:sticky;top:0;z-index:200;
+  background:rgba(248,247,244,0.96);
+  backdrop-filter:blur(10px);
+  border-bottom:2px solid var(--border2);
+  padding:0 1.5rem;height:52px;
+  display:flex;align-items:center;gap:1.2rem;
+}
+.logo-glyph{
+  font-family:'VT323',monospace;font-size:1.6rem;
+  color:var(--green);
+}
+.logo-title{
+  font-family:'VT323',monospace;font-size:1.5rem;letter-spacing:0.06em;
+  color:var(--green);
+}
+.logo-sub{font-size:0.65rem;color:var(--muted);letter-spacing:0.12em;}
+.header-right{margin-left:auto;display:flex;gap:0.6rem;align-items:center;}
+.blink{animation:blink 1.2s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
+
+/* ── TABS ── */
+.tabbar{
+  display:flex;overflow-x:auto;scrollbar-width:none;
+  border-bottom:1px solid var(--border2);
+  background:var(--panel);
+  position:sticky;top:52px;z-index:150;
+}
+.tabbar button{
+  font-family:'Share Tech Mono',monospace;font-size:0.7rem;
+  padding:0.7rem 1.1rem;background:none;border:none;
+  color:var(--muted);cursor:pointer;
+  border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap;
+  letter-spacing:0.04em;
+}
+.tabbar button.active{color:var(--green);border-bottom-color:var(--green);}
+.tabbar button:hover:not(.active){color:var(--text);}
+
+/* ── LAYOUT ── */
+.tab-content{display:none;}
+.tab-content.active{display:block;animation:fadeUp 0.22s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.wrap{max-width:1260px;margin:0 auto;padding:1.5rem;position:relative;z-index:1;}
+
+/* ── CARDS ── */
+.card{
+  background:var(--panel);border:1px solid var(--border2);
+  border-radius:6px;padding:1.3rem;margin-bottom:1.2rem;
+  position:relative;overflow:hidden;
+  box-shadow:0 1px 6px rgba(0,0,0,0.07);
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--green),var(--blue));
+  opacity:0.6;
+}
+.card-title{
+  font-family:'VT323',monospace;font-size:1rem;letter-spacing:0.1em;
+  color:var(--green);margin-bottom:1rem;
+  display:flex;align-items:center;gap:0.5rem;
+}
+.card-title::before{content:'> ';color:var(--green3);}
+
+/* ── CONCEPT BLOCKS ── */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem;}
+@media(max-width:680px){.cgrid{grid-template-columns:1fr;}}
+.cblock{
+  background:var(--panel2);border:1px solid var(--border);
+  border-radius:5px;padding:1rem;
+}
+.cblock h3{
+  font-family:'VT323',monospace;font-size:1rem;
+  color:var(--amber);margin-bottom:0.5rem;letter-spacing:0.06em;
+}
+.cblock p{font-size:0.8rem;color:var(--text2);line-height:1.75;}
+
+.formula{
+  background:#faf8f5;border:1px solid var(--border);
+  border-left:3px solid var(--green);
+  border-radius:4px;padding:0.7rem 0.9rem;
+  font-family:'Share Tech Mono',monospace;font-size:0.75rem;
+  color:var(--text2);margin:0.6rem 0;line-height:1.9;
+}
+.formula .h1{color:var(--amber);}
+.formula .h2{color:var(--blue);}
+.formula .h3{color:var(--red);}
+
+/* ── BUTTONS ── */
+.btn{
+  font-family:'Share Tech Mono',monospace;font-size:0.72rem;
+  padding:0.45rem 1rem;border-radius:4px;border:1px solid var(--border2);
+  cursor:pointer;transition:all 0.15s;display:inline-flex;
+  align-items:center;gap:0.4rem;letter-spacing:0.04em;
+  background:var(--panel2);color:var(--text2);
+}
+.btn:hover{border-color:var(--green);color:var(--green);background:#f0f9f4;}
+.btn-green{background:#e8f7ee;color:var(--green);border-color:var(--green3);}
+.btn-green:hover{background:#d4f0e0;box-shadow:0 2px 8px rgba(10,124,62,0.15);}
+.btn-amber{color:var(--amber);border-color:var(--amber2);}
+.btn-amber:hover{background:#fef3e2;}
+.btn-red{color:var(--red);border-color:var(--red);}
+.btn-red:hover{background:#fdecea;}
+
+/* ── FORM ── */
+.row{display:flex;gap:0.8rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem;}
+.fgroup{display:flex;flex-direction:column;gap:0.3rem;}
+.fgroup label{font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
+select,input[type=number]{
+  background:var(--panel);border:1px solid var(--border2);border-radius:4px;
+  padding:0.4rem 0.6rem;color:var(--text);
+  font-family:'Share Tech Mono',monospace;font-size:0.75rem;
+  outline:none;transition:border-color 0.15s;min-width:110px;
+}
+select:focus,input:focus{border-color:var(--green);}
+
+/* ── PILLS ── */
+.pills{display:flex;border:1px solid var(--border2);border-radius:4px;overflow:hidden;}
+.pills button{
+  flex:1;padding:0.38rem 0.7rem;background:none;border:none;
+  font-family:'Share Tech Mono',monospace;font-size:0.68rem;
+  color:var(--muted);cursor:pointer;transition:all 0.15s;white-space:nowrap;
+}
+.pills button.active{background:var(--green);color:#fff;}
+
+/* ── SLIDER ── */
+.slrow{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap;}
+.nn-slider{
+  -webkit-appearance:none;height:4px;border-radius:2px;flex:1;min-width:120px;
+  background:linear-gradient(90deg,var(--green) var(--spct,50%),var(--border2) var(--spct,50%));
+  border:none;cursor:pointer;outline:none;
+}
+.nn-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:3px;
+  background:var(--green);cursor:pointer;border:2px solid #fff;
+  box-shadow:0 1px 4px rgba(0,0,0,0.25);
+}
+.sl-val{font-family:'Share Tech Mono',monospace;font-size:0.85rem;color:var(--green);min-width:45px;text-align:right;}
+
+/* ── STAT BOXES ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:0.6rem;margin-bottom:1rem;}
+.stat-box{
+  background:var(--panel2);border:1px solid var(--border);border-radius:5px;
+  padding:0.7rem;text-align:center;
+}
+.stat-box .sv{font-family:'VT323',monospace;font-size:1.6rem;line-height:1;}
+.stat-box .sl{font-size:0.6rem;color:var(--muted);letter-spacing:0.07em;text-transform:uppercase;margin-top:0.2rem;}
+
+/* ── CANVAS ── */
+canvas{display:block;border-radius:4px;max-width:100%;}
+.cv-wrap{position:relative;overflow:hidden;border:1px solid var(--border2);border-radius:4px;background:var(--panel);}
+.cv-wrap canvas{display:block;}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;overflow-y:auto;max-height:280px;border-radius:4px;border:1px solid var(--border2);}
+table{width:100%;border-collapse:collapse;font-size:0.72rem;}
+thead{background:var(--panel2);position:sticky;top:0;z-index:2;overflow:visible;}
+th{font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:var(--green);padding:0.45rem 0.7rem;border-bottom:1px solid var(--border2);white-space:nowrap;letter-spacing:0.06em;position:relative;overflow:visible;}
+td{padding:0.38rem 0.7rem;border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--text);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#f5f3ef;}
+
+/* ── UPLOAD ── */
+.drop-zone{
+  border:2px dashed var(--border2);border-radius:5px;padding:1.5rem;
+  text-align:center;cursor:pointer;transition:all 0.2s;position:relative;
+}
+.drop-zone:hover{border-color:var(--green);background:rgba(10,124,62,0.03);}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.drop-zone .dicon{font-size:1.5rem;margin-bottom:0.4rem;color:var(--green);}
+.drop-zone h3{font-family:'VT323',monospace;font-size:1rem;color:var(--green);margin-bottom:0.3rem;}
+.drop-zone p{font-size:0.72rem;color:var(--muted);}
+
+/* ── NEURON ── */
+.neuron-svg{filter:none;}
+.prog-track{background:var(--panel2);border-radius:2px;height:6px;overflow:hidden;border:1px solid var(--border);}
+.prog-fill{height:100%;border-radius:2px;transition:width 0.3s;}
+
+/* ── ARCHITECTURE BUILDER ── */
+.arch-layer-chip{
+  background:var(--panel2);border:1px solid var(--border);border-radius:4px;
+  padding:0.4rem 0.7rem;display:flex;align-items:center;gap:0.5rem;
+  font-size:0.72rem;margin:0.2rem 0;
+}
+.arch-layer-chip:hover{border-color:var(--green);}
+.arch-layer-chip .lname{color:var(--green);min-width:80px;}
+.arch-layer-chip .ldetail{color:var(--muted);}
+
+/* ── CONFUSION MATRIX ── */
+.conf-table{border-collapse:collapse;}
+.conf-table td,.conf-table th{width:68px;height:52px;text-align:center;vertical-align:middle;font-family:'Share Tech Mono',monospace;font-size:0.78rem;border:1px solid var(--border2);}
+.conf-table .ch{background:var(--panel2);color:var(--green);font-size:0.62rem;letter-spacing:0.06em;}
+.ctp{background:rgba(10,124,62,0.12);color:var(--green);}
+.cfp{background:rgba(192,57,43,0.1);color:var(--red);}
+.cfn{background:rgba(180,83,9,0.1);color:var(--amber);}
+.ctn{background:rgba(29,111,164,0.08);color:var(--blue);}
+
+/* ── WEIGHT HEATMAP ── */
+.weight-chip{
+  display:inline-block;width:28px;height:28px;border-radius:2px;
+  font-size:0.55rem;text-align:center;line-height:28px;
+  border:1px solid var(--border);
+}
+
+/* ── TRAINING STATUS ── */
+#train-status-bar{
+  font-family:'Share Tech Mono',monospace;font-size:0.72rem;
+  color:var(--green);margin-top:0.4rem;min-height:1.1rem;
+}
+.loss-big{font-family:'VT323',monospace;font-size:2rem;color:var(--green);}
+
+/* ── LAYER BADGE ── */
+.lbadge{
+  display:inline-flex;align-items:center;
+  font-family:'Share Tech Mono',monospace;font-size:0.62rem;
+  padding:0.15rem 0.45rem;border-radius:2px;border:1px solid;margin:0.15rem;
+}
+
+/* ── PRINT ── */
+@media print{
+  body{background:white;color:black;}
+  body::before,body::after{display:none;}
+  header,.tabbar,.btn,.row,.drop-zone,input,select{display:none!important;}
+  .tab-content{display:block!important;}
+  .card{border:1px solid #ccc;background:white;break-inside:avoid;}
+  canvas{max-width:100%;}
+}
+
+/* ── GLOSSARY TERM TOOLTIPS ── */
+.term {
+  color: var(--amber);
+  border-bottom: 1px dashed var(--amber2);
+  cursor: help;
+  display: inline;
+}
+/* all .term-tip content is hidden in place; shown via JS in #global-tooltip */
+.term-tip { display: none; }
+
+/* Global floating tooltip — appended to body, never clipped */
+#global-tooltip {
+  position: fixed;
+  z-index: 99999;
+  width: 252px;
+  background: #ffffff;
+  border: 1px solid var(--border2);
+  border-top: 2px solid var(--amber);
+  border-radius: 5px;
+  padding: 0.65rem 0.8rem;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text2);
+  line-height: 1.7;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.14);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.12s;
+  white-space: normal;
+}
+#global-tooltip.visible { opacity: 1; }
+#global-tooltip strong { color: var(--amber); }
+#global-tooltip a {
+  display: inline-block;
+  margin-top: 0.4rem;
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 0.64rem;
+  border-bottom: 1px solid var(--border2);
+}
+#global-tooltip a:hover { color: var(--green); }
+#global-tooltip::before {
+  content: '';
+  position: absolute;
+  border: 6px solid transparent;
+}
+#global-tooltip.arrow-down::before {
+  top: 100%;
+  left: var(--arrow-left, 50%);
+  transform: translateX(-50%);
+  border-top-color: var(--border2);
+}
+#global-tooltip.arrow-up::before {
+  bottom: 100%;
+  left: var(--arrow-left, 50%);
+  transform: translateX(-50%);
+  border-bottom-color: var(--border2);
+}
+</style>
+</head>
+<body>
+
+<div id="global-tooltip" role="tooltip" aria-live="polite"></div>
+
+<header>
+  <div class="logo-glyph">⬡</div>
+  <div>
+    <div class="logo-title">NEURAL_NET_EXPLORER</div>
+    <div class="logo-sub">FEED-FORWARD · BACKPROPAGATION · LIVE TRAINING</div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot blink"></div>
+    <span style="font-size:0.65rem;color:var(--muted);">SYSTEM READY</span>
+  </div>
+</header>
+
+<div class="tabbar">
+  <button class="active" onclick="switchTab('concepts')">① CONCEPTS</button>
+  <button onclick="switchTab('neuron')">② NEURON</button>
+  <button onclick="switchTab('activations')">③ ACTIVATIONS</button>
+  <button onclick="switchTab('architect')">④ ARCHITECTURE</button>
+  <button onclick="switchTab('backprop')">⑤ BACKPROP</button>
+  <button onclick="switchTab('train')">⑥ TRAIN</button>
+  <button onclick="switchTab('evaluate')">⑦ EVALUATE</button>
+  <button onclick="switchTab('export')">⑧ EXPORT</button>
+</div>
+
+<!-- ═══════════════════════════════ TAB 1: CONCEPTS ═══════════════════════════════ -->
+<div id="tab-concepts" class="tab-content active">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">WHAT IS A NEURAL NETWORK?</div>
+    <div class="cgrid">
+      <div class="cblock">
+        <h3>THE BIOLOGICAL METAPHOR</h3>
+        <p>A neural network is a layered graph of computational units (neurons). Each neuron takes weighted inputs, sums them with a bias, then passes the result through a non-linear <em>activation function</em>. Stacking many layers allows the network to learn arbitrarily complex functions.</p>
+      </div>
+      <div class="cblock">
+        <h3>LAYERS</h3>
+        <p><strong style="color:var(--green)">Input layer:</strong> raw features — one node per feature.<br>
+        <strong style="color:var(--amber)">Hidden layers:</strong> learned representations. More layers = more abstraction.<br>
+        <strong style="color:var(--blue)">Output layer:</strong> one node per class (softmax) or one node for regression.</p>
+      </div>
+      <div class="cblock">
+        <h3>FORWARD PASS</h3>
+        <div class="formula">For layer l, neuron j:
+  <span class="h1">z[l][j] = Σᵢ w[l][i][j]·a[l-1][i] + b[l][j]</span>
+  <span class="h2">a[l][j] = f( z[l][j] )</span>
+  f = activation function (ReLU, sigmoid…)
+Output: final layer activations = predictions</div>
+      </div>
+      <div class="cblock">
+        <h3>BACKPROPAGATION</h3>
+        <div class="formula">Loss L → compute ∂L/∂w via chain rule:
+  <span class="h1">δ[L] = ∂L/∂z[L]   (output error)</span>
+  <span class="h2">δ[l] = (W[l+1]ᵀ δ[l+1]) ⊙ f'(z[l])</span>
+  <span class="h3">∂L/∂W[l] = δ[l] · a[l-1]ᵀ</span>
+  Update: w ← w − α·∂L/∂w</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">KEY CONCEPTS</div>
+    <div class="cgrid">
+      <div class="cblock"><h3>UNIVERSAL APPROXIMATION</h3><p>A network with even one <span class="term">hidden layer<span class="term-tip"><strong>Hidden Layer</strong><br>A layer between input and output. Learns intermediate feature representations. The "deep" in deep learning refers to having many hidden layers.<a href="https://en.wikipedia.org/wiki/Multilayer_perceptron" target="_blank">Wikipedia ↗</a></span></span> and enough neurons can approximate any continuous function on a compact domain. Depth (more layers) is usually more efficient than width (more neurons per layer) for complex tasks.</p></div>
+      <div class="cblock"><h3>OVERFITTING & REGULARISATION</h3><p>Deep networks can memorise training data. Remedies: <span class="term">dropout<span class="term-tip"><strong>Dropout</strong><br>Randomly sets a fraction of neurons to zero during each training step. Forces the network to learn redundant representations, reducing overfitting.<a href="https://en.wikipedia.org/wiki/Dilution_(neural_networks)" target="_blank">Wikipedia ↗</a></span></span> (randomly zero neurons), <span class="term">L2 weight decay<span class="term-tip"><strong>L2 Regularisation (Weight Decay)</strong><br>Adds λΣw² to the loss. Penalises large weights, encouraging simpler models. Equivalent to a Gaussian prior on weights.<a href="https://en.wikipedia.org/wiki/Regularization_(mathematics)" target="_blank">Wikipedia ↗</a></span></span>, <span class="term">early stopping<span class="term-tip"><strong>Early Stopping</strong><br>Halt training when validation loss stops improving. Simple but effective. Prevents the model from memorising noise in the training set.<a href="https://en.wikipedia.org/wiki/Early_stopping" target="_blank">Wikipedia ↗</a></span></span>, and <span class="term">batch normalisation<span class="term-tip"><strong>Batch Normalisation</strong><br>Normalises layer inputs per mini-batch. Stabilises training, allows higher learning rates, and reduces sensitivity to weight initialisation.<a href="https://en.wikipedia.org/wiki/Batch_normalization" target="_blank">Wikipedia ↗</a></span></span>.</p></div>
+      <div class="cblock"><h3>VANISHING GRADIENTS</h3><p><span class="term">Sigmoid<span class="term-tip"><strong>Sigmoid</strong><br>σ(z) = 1/(1+e⁻ᶻ). Output ∈ (0,1). Gradient ≤ 0.25, so after L layers gradient shrinks by 0.25ᴸ → nearly zero for deep networks.<a href="https://en.wikipedia.org/wiki/Sigmoid_function" target="_blank">Wikipedia ↗</a></span></span>/tanh saturate — gradients shrink to near-zero as they propagate back through many layers. Solution: use <span class="term">ReLU<span class="term-tip"><strong>ReLU (Rectified Linear Unit)</strong><br>f(z) = max(0,z). Gradient = 1 for z>0, so no shrinkage. Fast, simple, and the default choice for hidden layers.<a href="https://en.wikipedia.org/wiki/Rectifier_(neural_networks)" target="_blank">Wikipedia ↗</a></span></span> activations, <span class="term">residual connections<span class="term-tip"><strong>Residual Connections (Skip Connections)</strong><br>Add the input of a layer directly to its output: y = F(x) + x. Allows gradients to flow straight back through the skip path, enabling very deep networks.<a href="https://en.wikipedia.org/wiki/Residual_neural_network" target="_blank">Wikipedia ↗</a></span></span>, or careful weight initialisation (He, Xavier).</p></div>
+      <div class="cblock"><h3>OPTIMISERS</h3><p>Beyond vanilla <span class="term">gradient descent<span class="term-tip"><strong>Gradient Descent</strong><br>Iteratively update weights in the direction that reduces loss: w ← w − α·∂L/∂w. The engine behind all neural network training.<a href="https://en.wikipedia.org/wiki/Gradient_descent" target="_blank">Wikipedia ↗</a></span></span>: <span class="term">Momentum<span class="term-tip"><strong>Momentum</strong><br>Accumulates a velocity vector in the gradient direction. Helps escape shallow local minima and speeds up convergence in consistent gradient directions.<a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent#Momentum" target="_blank">Wikipedia ↗</a></span></span> accumulates velocity, <span class="term">RMSProp<span class="term-tip"><strong>RMSProp</strong><br>Scales learning rate by a running average of squared gradients. Adapts per-parameter, reducing oscillation in noisy gradient directions.<a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent#RMSProp" target="_blank">Wikipedia ↗</a></span></span> scales by gradient variance, <span class="term">Adam<span class="term-tip"><strong>Adam (Adaptive Moment Estimation)</strong><br>Combines momentum and RMSProp. Maintains both first and second moment estimates. Most popular optimiser in modern deep learning.<a href="https://en.wikipedia.org/wiki/Adam_optimizer" target="_blank">Wikipedia ↗</a></span></span> combines both and is the most common modern choice.</p></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ TAB 2: NEURON ═══════════════════════════════ -->
+<div id="tab-neuron" class="tab-content">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">INTERACTIVE SINGLE NEURON</div>
+    <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem;">Drag the sliders to change each input weight and the bias. Watch the weighted sum z and activation a = f(z) update in real time.</p>
+    <div style="display:flex;gap:1.2rem;flex-wrap:wrap;align-items:flex-start;">
+      <div style="flex:0 0 340px;min-width:280px;">
+        <canvas id="neuron-canvas" width="340" height="260" style="width:100%;background:var(--panel);border:1px solid var(--border2);"></canvas>
+      </div>
+      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.7rem;">
+        <div class="fgroup">
+          <label><span class="term">Activation Function<span class="term-tip"><strong>Activation Function</strong><br>Non-linear function applied to the weighted sum z. Without it, a deep network collapses to a single linear layer. Common choices: ReLU, Sigmoid, Tanh.<a href="https://en.wikipedia.org/wiki/Activation_function" target="_blank">Wikipedia ↗</a></span></span></label>
+          <div class="pills">
+            <button class="active" id="nact-relu" onclick="setNeuronAct('relu')">ReLU</button>
+            <button id="nact-sig" onclick="setNeuronAct('sigmoid')">Sigmoid</button>
+            <button id="nact-tanh" onclick="setNeuronAct('tanh')">Tanh</button>
+          </div>
+        </div>
+        <div id="neuron-sliders"></div>
+        <div style="margin-top:0.3rem;">
+          <div class="fgroup"><label><span class="term">Bias b<span class="term-tip"><strong>Bias</strong><br>A learnable offset added to the weighted sum before activation: z = Σwᵢxᵢ + b. Allows the neuron to activate even when all inputs are zero. Shifts the activation function left/right.<a href="https://en.wikipedia.org/wiki/Artificial_neuron#Bias" target="_blank">Wikipedia ↗</a></span></span></label>
+            <div class="slrow">
+              <input type="range" class="nn-slider" id="neuron-bias" min="-3" max="3" value="0" step="0.1"
+                oninput="neuronBias=+this.value;updateNeuronSlider(this);drawNeuron()">
+              <div class="sl-val" id="neuron-bias-val">0.0</div>
+            </div>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border2);border-radius:2px;padding:0.8rem;background:var(--panel2);">
+          <div style="font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;margin-bottom:0.4rem;">COMPUTATION</div>
+          <div style="font-size:0.75rem;color:var(--text2);margin-bottom:0.3rem;">z = <span id="n-z-formula" style="color:var(--green);font-size:0.72rem;"></span></div>
+          <div style="font-size:0.75rem;color:var(--text2);margin-bottom:0.6rem;">z = <span id="n-z-val" style="color:var(--amber);font-family:'VT323',monospace;font-size:1.1rem;"></span></div>
+          <div style="font-size:0.75rem;color:var(--text2);">a = f(z) = <span id="n-a-val" style="color:var(--green);font-family:'VT323',monospace;font-size:1.3rem;text-shadow:0 0 10px rgba(10,124,62,0.35);"></span></div>
+          <div class="prog-track" style="margin-top:0.5rem;">
+            <div class="prog-fill" id="n-act-bar" style="background:var(--green);width:50%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ TAB 3: ACTIVATIONS ═══════════════════════════════ -->
+<div id="tab-activations" class="tab-content">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">ACTIVATION FUNCTION EXPLORER</div>
+    <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem;">Select a function. Drag on the canvas to move z and observe the output and derivative live.</p>
+    <div class="row">
+      <div class="fgroup">
+        <label>Function</label>
+        <div class="pills">
+          <button class="active" id="af-relu" onclick="setActFn('relu')">ReLU</button>
+          <button id="af-lrelu" onclick="setActFn('lrelu')">Leaky</button>
+          <button id="af-sig" onclick="setActFn('sigmoid')">Sigmoid</button>
+          <button id="af-tanh" onclick="setActFn('tanh')">Tanh</button>
+          <button id="af-elu" onclick="setActFn('elu')">ELU</button>
+          <button id="af-swish" onclick="setActFn('swish')">Swish</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:1.2rem;flex-wrap:wrap;align-items:flex-start;">
+      <div style="flex:1;min-width:300px;">
+        <canvas id="act-canvas" width="520" height="300"
+          style="width:100%;background:var(--panel);border:1px solid var(--border2);cursor:ew-resize;touch-action:none;"></canvas>
+        <p style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem;">DRAG TO MOVE z — green=f(z) — amber=f'(z)</p>
+      </div>
+      <div style="flex:0 0 200px;min-width:180px;display:flex;flex-direction:column;gap:0.6rem;">
+        <div style="background:var(--panel2);border:1px solid var(--border2);padding:0.8rem;">
+          <div style="font-size:0.62rem;color:var(--muted);letter-spacing:0.07em;margin-bottom:0.3rem;">INPUT z</div>
+          <div id="af-z-disp" style="font-family:'VT323',monospace;font-size:1.8rem;color:var(--text2);">0.000</div>
+        </div>
+        <div style="background:var(--panel2);border:1px solid var(--border2);padding:0.8rem;">
+          <div style="font-size:0.62rem;color:var(--muted);letter-spacing:0.07em;margin-bottom:0.3rem;">f(z) OUTPUT</div>
+          <div id="af-fz-disp" style="font-family:'VT323',monospace;font-size:1.8rem;color:var(--green);text-shadow:0 0 10px rgba(10,124,62,0.35);">0.000</div>
+        </div>
+        <div style="background:var(--panel2);border:1px solid var(--border2);padding:0.8rem;">
+          <div style="font-size:0.62rem;color:var(--muted);letter-spacing:0.07em;margin-bottom:0.3rem;">f'(z) GRADIENT</div>
+          <div id="af-dfz-disp" style="font-family:'VT323',monospace;font-size:1.8rem;color:var(--amber);text-shadow:0 0 10px rgba(255,170,0,0.4);">0.000</div>
+        </div>
+        <div style="background:var(--panel2);border:1px solid var(--border2);padding:0.8rem;">
+          <div id="af-desc" style="font-size:0.72rem;color:var(--text2);line-height:1.7;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">COMPARISON CHART</div>
+    <canvas id="act-compare-canvas" width="700" height="200"
+      style="width:100%;background:var(--panel);border:1px solid var(--border2);"></canvas>
+    <div style="margin-top:0.5rem;font-size:0.68rem;color:var(--muted);">
+      <span style="color:var(--green)">─ ReLU</span> &nbsp;
+      <span style="color:var(--amber)">─ Sigmoid</span> &nbsp;
+      <span style="color:var(--blue)">─ Tanh</span> &nbsp;
+      <span style="color:#ff7fff">─ Leaky ReLU</span> &nbsp;
+      <span style="color:#ffff00">─ Swish</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ TAB 4: ARCHITECTURE ═══════════════════════════════ -->
+<div id="tab-architect" class="tab-content">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">NETWORK ARCHITECTURE BUILDER</div>
+    <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem;">Design your network topology. The diagram updates live. This architecture is used for training in Tab ⑥.</p>
+    <div class="row">
+      <div class="fgroup">
+        <label>Neurons in new layer</label>
+        <input type="number" id="new-layer-size" min="1" max="32" value="4" style="width:90px;">
+      </div>
+      <div class="fgroup">
+        <label>Activation</label>
+        <select id="new-layer-act">
+          <option value="relu">ReLU</option>
+          <option value="sigmoid">Sigmoid</option>
+          <option value="tanh">Tanh</option>
+          <option value="lrelu">Leaky ReLU</option>
+        </select>
+      </div>
+      <button class="btn btn-green" onclick="addLayer()">+ ADD HIDDEN LAYER</button>
+      <button class="btn btn-red" onclick="removeLayer()">− REMOVE LAST</button>
+      <button class="btn" onclick="resetArch()">↺ RESET</button>
+    </div>
+    <div id="arch-layer-list" style="margin-bottom:1rem;"></div>
+    <canvas id="arch-canvas" width="760" height="300"
+      style="width:100%;background:var(--panel);border:1px solid var(--border2);"></canvas>
+    <div style="margin-top:0.6rem;" id="arch-summary"></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ TAB 5: BACKPROP ═══════════════════════════════ -->
+<div id="tab-backprop" class="tab-content">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">BACKPROPAGATION VISUALISER</div>
+    <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem;">Step through forward and backward passes. Activated neurons glow green; <span class="term">gradient<span class="term-tip"><strong>Gradient</strong><br>The partial derivative ∂L/∂w — tells us how much the loss changes with each weight. The direction of steepest increase. We subtract it to descend.<a href="https://en.wikipedia.org/wiki/Gradient" target="_blank">Wikipedia ↗</a></span></span> magnitudes shown in amber (larger = stronger signal).</p>
+    <div class="row">
+      <button class="btn btn-green" id="bp-fwd-btn" onclick="bpForward()">▶ FORWARD PASS</button>
+      <button class="btn btn-amber" id="bp-bwd-btn" onclick="bpBackward()">◀ BACKWARD PASS</button>
+      <button class="btn" onclick="bpReset()">↺ RESET</button>
+      <div class="fgroup" style="margin-left:auto;">
+        <label>Target class</label>
+        <input type="number" id="bp-target" min="0" max="1" value="1" style="width:70px;">
+      </div>
+    </div>
+    <canvas id="bp-canvas" width="760" height="360"
+      style="width:100%;background:var(--panel);border:1px solid var(--border2);"></canvas>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.8rem;" id="bp-info"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">CHAIN RULE — STEP BY STEP</div>
+    <div class="cgrid">
+      <div class="cblock">
+        <h3>LOSS → OUTPUT</h3>
+        <div class="formula">Cross-entropy: L = −Σ y log(a_out)
+<span class="h1">∂L/∂a_out = a_out − y   (for softmax+CE)</span>
+<span class="h2">∂L/∂z_out = ∂L/∂a_out · f'(z_out)</span></div>
+      </div>
+      <div class="cblock">
+        <h3>HIDDEN ← OUTPUT</h3>
+        <div class="formula">Error propagates backwards:
+<span class="h1">δ[l] = (W[l+1]ᵀ · δ[l+1]) ⊙ f'(z[l])</span>
+⊙ = element-wise multiply
+f'(z) is why activation choice matters!</div>
+      </div>
+      <div class="cblock">
+        <h3>WEIGHT GRADIENTS</h3>
+        <div class="formula">∂L/∂W[l] = δ[l] · a[l-1]ᵀ
+<span class="h2">∂L/∂b[l] = δ[l]</span>
+<span class="h3">W[l] ← W[l] − α · ∂L/∂W[l]</span>
+Larger δ → larger weight update</div>
+      </div>
+      <div class="cblock">
+        <h3>VANISHING GRADIENT</h3>
+        <div class="formula">Sigmoid: f'(z) ≤ 0.25
+After L layers: gradient ≤ 0.25ᴸ
+<span class="h3">L=10: ≤ 9.5e-7  → near zero!</span>
+<span class="h1">ReLU: f'(z) = 1 for z>0 → no shrink</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ TAB 6: TRAIN ═══════════════════════════════ -->
+<div id="tab-train" class="tab-content">
+<div class="wrap">
+
+  <!-- DATA SOURCE CARD -->
+  <div class="card">
+    <div class="card-title">DATA SOURCE</div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+
+      <!-- Upload -->
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;margin-bottom:0.5rem;">UPLOAD CSV</div>
+        <div class="drop-zone" onclick="document.getElementById('nn-csv-input').click()">
+          <input type="file" id="nn-csv-input" accept=".csv" onchange="loadUserCSV(this)" style="display:none;">
+          <div class="dicon" style="font-size:1.2rem;">📂</div>
+          <h3 style="font-size:0.82rem;">DROP CSV HERE</h3>
+          <p style="font-size:0.68rem;">Any column = response. Numeric predictors auto-detected.</p>
+        </div>
+        <div id="csv-status" style="font-size:0.68rem;color:var(--green2);margin-top:0.4rem;min-height:1rem;"></div>
+      </div>
+
+      <!-- Example Datasets -->
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;margin-bottom:0.5rem;">EXAMPLE DATASETS</div>
+        <div style="display:flex;flex-direction:column;gap:0.35rem;">
+          <button class="btn btn-green" onclick="useExampleDS('moons')">🌙 Two Moons (non-linear)</button>
+          <button class="btn" onclick="useExampleDS('circles')">⭕ Concentric Circles</button>
+          <button class="btn" onclick="useExampleDS('blobs')">🫧 Gaussian Blobs (linear)</button>
+          <button class="btn" onclick="useExampleDS('spiral')">🌀 Interleaved Spiral</button>
+          <button class="btn" onclick="useExampleDS('xor')">⊕ XOR Pattern</button>
+        </div>
+      </div>
+
+      <!-- Variable selectors (shown for uploaded data) + always-shown positive class + viz selectors -->
+      <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.6rem;">
+        <div style="font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;margin-bottom:0.1rem;">ACTIVE DATASET</div>
+        <div id="ds-info" style="background:var(--panel2);border:1px solid var(--border2);border-radius:2px;padding:0.7rem;font-size:0.72rem;color:var(--text2);line-height:1.9;min-height:54px;">
+          No data loaded. Choose an example or upload a CSV.
+        </div>
+
+        <!-- Response + Predictors (CSV only) -->
+        <div id="col-selectors" style="display:none;">
+          <div style="font-size:0.62rem;color:var(--muted);letter-spacing:0.07em;margin-bottom:0.4rem;">RESPONSE &amp; PREDICTORS</div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+            <div class="fgroup">
+              <label>Response (Y)</label>
+              <select id="resp-col-sel" onchange="onRespColChange()"></select>
+            </div>
+            <div class="fgroup">
+              <label>Positive Class</label>
+              <select id="pos-class-sel" onchange="onPosClassChange()"></select>
+            </div>
+          </div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-bottom:0.3rem;">PREDICTORS (uncheck to exclude)</div>
+          <div id="predictor-checkboxes" style="display:flex;flex-wrap:wrap;gap:0.3rem 0.6rem;font-size:0.7rem;"></div>
+        </div>
+
+        <!-- Positive class for example datasets -->
+        <div id="pos-class-example" style="display:none;">
+          <div class="fgroup">
+            <label>Positive Class</label>
+            <select id="pos-class-example-sel" onchange="onPosClassExampleChange()"></select>
+          </div>
+        </div>
+
+        <!-- Viz feature selectors (both CSV and example) -->
+        <div id="feature-selectors" style="display:none;">
+          <div style="font-size:0.62rem;color:var(--muted);letter-spacing:0.07em;margin-bottom:0.3rem;">BOUNDARY PLOT AXES</div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <div class="fgroup">
+              <label>X-axis feature</label>
+              <select id="feat-x-sel" onchange="updateFeatureSelection()"></select>
+            </div>
+            <div class="fgroup">
+              <label>Y-axis feature</label>
+              <select id="feat-y-sel" onchange="updateFeatureSelection()"></select>
+            </div>
+          </div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:0.25rem;">All selected predictors used for training. These two for visualization.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TRAINING CONFIG CARD -->
+  <div class="card">
+    <div class="card-title">LIVE TRAINING</div>
+    <div class="row">
+      <div class="fgroup">
+        <label><span class="term">Learning Rate α<span class="term-tip"><strong>Learning Rate (α)</strong><br>Controls how large each weight update step is. Too high → unstable, oscillating loss. Too low → very slow convergence.<br>Typical range: 0.001–0.1<a href="https://en.wikipedia.org/wiki/Learning_rate" target="_blank">Wikipedia ↗</a></span></span></label>
+        <div class="slrow">
+          <input type="range" class="nn-slider" id="t-lr" min="-4" max="-0.5" value="-2" step="0.1"
+            oninput="tLR=Math.pow(10,+this.value);document.getElementById('t-lr-val').textContent=tLR.toFixed(4);updateSliderPct(this)">
+          <div class="sl-val" id="t-lr-val" style="min-width:58px;">0.0100</div>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label><span class="term">Hidden Layers<span class="term-tip"><strong>Hidden Layers</strong><br>Layers between input and output. Each layer learns higher-level representations. More layers = deeper network = more expressive but harder to train.<a href="https://en.wikipedia.org/wiki/Multilayer_perceptron" target="_blank">Wikipedia ↗</a></span></span></label>
+        <div class="pills">
+          <button id="hl-1" onclick="setHiddenLayers([8])">1×8</button>
+          <button class="active" id="hl-2" onclick="setHiddenLayers([16,8])">2×[16,8]</button>
+          <button id="hl-3" onclick="setHiddenLayers([16,16,8])">3×[16,16,8]</button>
+          <button id="hl-4" onclick="setHiddenLayers([32,16,8])">WIDE</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label><span class="term">Activation Fn<span class="term-tip"><strong>Activation Function</strong><br>Introduces non-linearity so the network can learn complex patterns. Without it, stacking layers is equivalent to a single linear layer.<a href="https://en.wikipedia.org/wiki/Activation_function" target="_blank">Wikipedia ↗</a></span></span></label>
+        <select id="t-act">
+          <option value="relu">ReLU</option>
+          <option value="tanh">Tanh</option>
+          <option value="sigmoid">Sigmoid</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label><span class="term">Batch Size<span class="term-tip"><strong>Batch Size</strong><br>Number of samples used per gradient update. Smaller = noisier but faster updates and often better generalisation. Larger = smoother gradient, more stable.<a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent#Mini-batch_gradient_descent" target="_blank">Wikipedia ↗</a></span></span></label>
+        <select id="t-batch">
+          <option value="16">16</option>
+          <option value="32" selected>32</option>
+          <option value="64">64</option>
+          <option value="full">Full</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn btn-green" onclick="startTraining()">▶ TRAIN</button>
+      <button class="btn btn-red" onclick="stopTraining()">■ STOP</button>
+      <button class="btn" onclick="resetTraining()">↺ RESET</button>
+      <div style="margin-left:auto;display:flex;gap:1rem;align-items:center;">
+        <div>
+          <div class="loss-big" id="t-loss-val">—</div>
+          <div style="font-size:0.6rem;color:var(--muted);">
+            <span class="term">LOSS<span class="term-tip"><strong>Cross-Entropy Loss</strong><br>Measures how wrong the model's predictions are. L = −Σ y·log(p̂). Lower is better. Goal of training: minimise this.<a href="https://en.wikipedia.org/wiki/Cross-entropy" target="_blank">Wikipedia ↗</a></span></span>
+          </div>
+        </div>
+        <div>
+          <div class="loss-big" id="t-acc-val" style="color:var(--amber);">—</div>
+          <div style="font-size:0.6rem;color:var(--muted);">
+            <span class="term">ACC<span class="term-tip"><strong>Accuracy</strong><br>Fraction of samples classified correctly. Simple but misleading on imbalanced datasets — check F1 and confusion matrix too.<a href="https://en.wikipedia.org/wiki/Accuracy_and_precision" target="_blank">Wikipedia ↗</a></span></span>
+          </div>
+        </div>
+        <div>
+          <div class="loss-big" id="t-epoch-val" style="color:var(--blue);">0</div>
+          <div style="font-size:0.6rem;color:var(--muted);">
+            <span class="term">EPOCH<span class="term-tip"><strong>Epoch</strong><br>One full pass through the training dataset. Networks typically need many epochs (100–10,000+) to converge. Watch for overfitting after too many epochs.<a href="https://en.wikipedia.org/wiki/Epoch_(computing)" target="_blank">Wikipedia ↗</a></span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+      <div style="flex:1;min-width:260px;">
+        <div style="font-size:0.62rem;color:var(--muted);margin-bottom:0.3rem;">
+          <span class="term">LOSS<span class="term-tip"><strong>Loss Curve</strong><br>Green = training loss (cross-entropy). Amber = training accuracy. A healthy curve: loss decreases smoothly, accuracy rises. Spikes indicate too-large a learning rate.</span></span>
+          CURVE &nbsp;(green) · 
+          <span class="term">ACCURACY<span class="term-tip"><strong>Accuracy</strong><br>Amber overlay: fraction of training samples correctly classified at this epoch.</span></span>
+          (amber)
+        </div>
+        <canvas id="t-loss-canvas" width="500" height="180"
+          style="width:100%;background:var(--panel);border:1px solid var(--border2);"></canvas>
+      </div>
+      <div style="flex:1;min-width:260px;">
+        <div style="font-size:0.62rem;color:var(--muted);margin-bottom:0.3rem;">
+          <span class="term">DECISION BOUNDARY<span class="term-tip"><strong>Decision Boundary</strong><br>The model's class partition in 2D feature space. Blue region = predict class 0, Red = predict class 1. More complex networks can learn curved, non-linear boundaries.<a href="https://en.wikipedia.org/wiki/Decision_boundary" target="_blank">Wikipedia ↗</a></span></span>
+          · x-axis: <span id="bnd-xlabel" style="color:var(--green2)">feature 1</span> · y-axis: <span id="bnd-ylabel" style="color:var(--green2)">feature 2</span>
+        </div>
+        <canvas id="t-bnd-canvas" width="500" height="180"
+          style="width:100%;background:var(--panel);border:1px solid var(--border2);"></canvas>
+      </div>
+    </div>
+    <div id="train-status-bar" style="margin-top:0.5rem;"></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ TAB 7: EVALUATE ═══════════════════════════════ -->
+<div id="tab-evaluate" class="tab-content">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">EVALUATION</div>
+    <div style="display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap;margin-bottom:0.8rem;">
+      <button class="btn btn-green" onclick="runEval()">▶ RUN EVALUATION</button>
+      <div id="eval-pos-label" style="font-size:0.72rem;color:var(--muted);">Positive class: <span style="color:var(--amber);" id="eval-pos-display">—</span></div>
+    </div>
+    <div class="stat-grid" id="eval-stats"></div>
+  </div>
+
+  <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+
+    <!-- Confusion Matrix -->
+    <div style="flex:0 0 auto;">
+      <div class="card" style="min-width:260px;">
+        <div class="card-title">
+          <span class="term">CONFUSION MATRIX<span class="term-tip"><strong>Confusion Matrix</strong><br>Rows = actual class, Columns = predicted class. Diagonal cells (green) = correct. Off-diagonal = errors.<a href="https://en.wikipedia.org/wiki/Confusion_matrix" target="_blank">Wikipedia ↗</a></span></span>
+        </div>
+        <div id="eval-conf"></div>
+        <div style="margin-top:0.7rem;font-size:0.72rem;line-height:1.9;color:var(--text2);">
+          <span style="color:var(--green)">■ TP</span> True Positive &nbsp;
+          <span style="color:var(--blue)">■ TN</span> True Negative<br>
+          <span style="color:var(--red)">■ FP</span> False Positive (false alarm) &nbsp;
+          <span style="color:var(--amber)">■ FN</span> False Negative (missed)
+        </div>
+      </div>
+    </div>
+
+    <!-- ROC Curve -->
+    <div style="flex:0 0 auto;">
+      <div class="card" style="min-width:280px;">
+        <div class="card-title">
+          <span class="term">ROC CURVE<span class="term-tip"><strong>ROC Curve</strong><br>Receiver Operating Characteristic. Plots TPR vs FPR across all thresholds. Closer to top-left = better. AUC = area under the curve.<a href="https://en.wikipedia.org/wiki/Receiver_operating_characteristic" target="_blank">Wikipedia ↗</a></span></span>
+        </div>
+        <canvas id="eval-roc" width="280" height="260"
+          style="width:280px;height:260px;background:var(--panel);border:1px solid var(--border2);display:block;"></canvas>
+        <div style="margin-top:0.5rem;font-family:'VT323',monospace;font-size:1.2rem;color:var(--green);">
+          <span class="term">AUC<span class="term-tip"><strong>AUC</strong><br>Area Under ROC Curve. 0.5 = random classifier. 1.0 = perfect. ≥0.9 = excellent, 0.7–0.9 = good.<a href="https://en.wikipedia.org/wiki/Receiver_operating_characteristic#AUC" target="_blank">Wikipedia ↗</a></span></span>
+          = <span id="eval-auc" style="color:var(--amber);">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-class metrics -->
+    <div style="flex:1;min-width:280px;">
+      <div class="card">
+        <div class="card-title">PER-CLASS METRICS</div>
+        <div style="overflow-x:auto;">
+        <table style="min-width:340px;">
+          <thead><tr>
+            <th>CLASS</th>
+            <th><span class="term">PRECISION<span class="term-tip"><strong>Precision</strong><br>TP / (TP + FP). Of all samples predicted as this class, what fraction truly belong? High = few false alarms.<a href="https://en.wikipedia.org/wiki/Precision_and_recall" target="_blank">Wikipedia ↗</a></span></span></th>
+            <th><span class="term">RECALL<span class="term-tip"><strong>Recall (Sensitivity)</strong><br>TP / (TP + FN). Of all actual members of this class, what fraction did we correctly identify? High = few missed cases.<a href="https://en.wikipedia.org/wiki/Precision_and_recall" target="_blank">Wikipedia ↗</a></span></span></th>
+            <th><span class="term">F1<span class="term-tip"><strong>F1 Score</strong><br>Harmonic mean of precision and recall: 2·P·R/(P+R). Best single metric when both precision and recall matter.<a href="https://en.wikipedia.org/wiki/F-score" target="_blank">Wikipedia ↗</a></span></span></th>
+            <th>SUPPORT</th>
+          </tr></thead>
+          <tbody id="eval-per-class"></tbody>
+        </table>
+        </div>
+        <div style="margin-top:0.8rem;" id="eval-per-class-note" style="font-size:0.7rem;color:var(--muted);"></div>
+      </div>
+
+      <div class="card" style="margin-top:0;">
+        <div class="card-title">THRESHOLD ANALYSIS</div>
+        <canvas id="eval-thresh-canvas" width="400" height="140"
+          style="width:100%;background:var(--panel);border:1px solid var(--border2);display:block;"></canvas>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem;">
+          <span style="color:var(--green)">─ Precision</span> &nbsp;
+          <span style="color:var(--amber)">─ Recall</span> &nbsp;
+          <span style="color:var(--blue)">─ F1</span>
+          &nbsp;·&nbsp; x-axis = threshold (0→1)
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ TAB 8: EXPORT ═══════════════════════════════ -->
+<div id="tab-export" class="tab-content">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">EXPORT</div>
+    <div style="display:flex;gap:0.7rem;flex-wrap:wrap;">
+      <button class="btn btn-green" onclick="exportWeights()">⬇ WEIGHTS CSV</button>
+      <button class="btn" onclick="exportPreds()">⬇ PREDICTIONS CSV</button>
+      <button class="btn" onclick="exportData()">⬇ DATASET CSV</button>
+      <button class="btn btn-amber" onclick="window.print()">🖨 PRINT REPORT</button>
+    </div>
+  </div>
+  <div class="card" id="export-report">
+    <div class="card-title">SYSTEM REPORT</div>
+    <div id="export-body"><p style="color:var(--muted);">Train the model to generate a report.</p></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════ SCRIPT ═══════════════════ -->
+<script>
+/* ════════════════════════════════════════════════════
+   GLOBALS
+════════════════════════════════════════════════════ */
+const NN = {
+  data:[], classes:[], features:[],
+  arch: [16, 8],        // hidden layer sizes
+  hiddenAct: 'relu',
+  weights: [],          // per-layer weight matrices [layer][out][in]
+  biases: [],           // per-layer bias vectors
+  losses: [],
+  accs: [],
+  trained: false,
+  trainDS: 'moons',
+  predictions: [],
+};
+let tLR = 0.01, tBatch = 32, trainTimer = null, tEpoch = 0;
+let neuronWeights = [0.5, -0.3, 0.8], neuronBias = 0.2, neuronAct = 'relu';
+let actFn = 'relu', actZ = 0;
+let bpState = {fwd:false, bwd:false, activations:[], deltas:[]};
+let archLayers = [];  // [{size,act}]
+
+/* ════════════════════════════════════════════════════
+   MATH HELPERS
+════════════════════════════════════════════════════ */
+const ACT = {
+  relu:    z => Math.max(0, z),
+  lrelu:   z => z > 0 ? z : 0.01*z,
+  sigmoid: z => 1/(1+Math.exp(-z)),
+  tanh:    z => Math.tanh(z),
+  elu:     z => z >= 0 ? z : (Math.exp(z)-1),
+  swish:   z => z/(1+Math.exp(-z)),
+};
+const ACT_D = {
+  relu:    z => z > 0 ? 1 : 0,
+  lrelu:   z => z > 0 ? 1 : 0.01,
+  sigmoid: z => { const s=1/(1+Math.exp(-z)); return s*(1-s); },
+  tanh:    z => 1 - Math.tanh(z)**2,
+  elu:     z => z >= 0 ? 1 : Math.exp(z),
+  swish:   z => { const s=1/(1+Math.exp(-z)); return s+z*s*(1-s); },
+};
+function softmax(arr){
+  const m=Math.max(...arr);
+  const e=arr.map(x=>Math.exp(x-m));
+  const s=e.reduce((a,b)=>a+b,0);
+  return e.map(x=>x/s);
+}
+function applyAct(fn, z){ return (ACT[fn]||ACT.relu)(z); }
+function applyActD(fn, z){ return (ACT_D[fn]||ACT_D.relu)(z); }
+
+/* ════════════════════════════════════════════════════
+   TABS
+════════════════════════════════════════════════════ */
+function switchTab(id){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tabbar button').forEach(e=>e.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  ['concepts','neuron','activations','architect','backprop','train','evaluate','export']
+    .forEach((t,i)=>document.querySelectorAll('.tabbar button')[i].classList.toggle('active',t===id));
+  if(id==='neuron') drawNeuron();
+  if(id==='activations'){drawActFn();drawActCompare();}
+  if(id==='architect') drawArch();
+  if(id==='backprop') drawBP();
+  if(id==='evaluate'){
+    syncPosClassDisplay();
+    // redraw ROC/thresh if results already computed
+    if(NN.predictions.length){
+      const probs=NN.predictions.map(p=>p.prob1);
+      const y=NN.predictions.map(p=>p.actual);
+      requestAnimationFrame(()=>{ drawROC(probs,y); drawThreshCurve(probs,y); });
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   SLIDER HELPERS
+════════════════════════════════════════════════════ */
+function updateSliderPct(el){
+  const pct=(+el.value - +el.min)/(+el.max - +el.min)*100;
+  el.style.setProperty('--spct',pct+'%');
+}
+function updateNeuronSlider(el){
+  updateSliderPct(el);
+}
+
+/* ════════════════════════════════════════════════════
+   TAB 2: SINGLE NEURON
+════════════════════════════════════════════════════ */
+function setNeuronAct(a){
+  neuronAct=a;
+  ['relu','sig','tanh'].forEach(s=>document.getElementById('nact-'+s).classList.toggle('active',s===a.slice(0,s.length)&&a.startsWith(s.replace('sig','sigmoid').replace('sig','sig'))));
+  document.getElementById('nact-relu').classList.toggle('active',a==='relu');
+  document.getElementById('nact-sig').classList.toggle('active',a==='sigmoid');
+  document.getElementById('nact-tanh').classList.toggle('active',a==='tanh');
+  drawNeuron();
+}
+
+function buildNeuronSliders(){
+  const n=neuronWeights.length;
+  const container=document.getElementById('neuron-sliders');
+  container.innerHTML=neuronWeights.map((w,i)=>`
+    <div class="fgroup" style="margin-bottom:0.4rem;">
+      <label>w${i+1} · x${i+1}</label>
+      <div class="slrow">
+        <input type="range" class="nn-slider" id="nw-${i}" min="-3" max="3" value="${w}" step="0.1"
+          oninput="neuronWeights[${i}]=+this.value;updateNeuronSlider(this);drawNeuron()">
+        <div class="sl-val" id="nw-val-${i}">${w.toFixed(1)}</div>
+      </div>
+    </div>`).join('');
+  neuronWeights.forEach((_,i)=>{
+    const el=document.getElementById(`nw-${i}`);
+    if(el) updateSliderPct(el);
+  });
+}
+
+function drawNeuron(){
+  const w=neuronWeights, b=neuronBias;
+  const z=w.reduce((s,v,i)=>s+v*(i+1)*0.5,0)+b; // use x_i=(i+1)*0.5 as demo inputs
+  const inputs=w.map((_,i)=>(i+1)*0.5);
+  const a=applyAct(neuronAct,z);
+
+  // update val displays
+  w.forEach((wv,i)=>{
+    const el=document.getElementById(`nw-val-${i}`);
+    if(el)el.textContent=wv.toFixed(1);
+  });
+  document.getElementById('neuron-bias-val').textContent=neuronBias.toFixed(1);
+  updateSliderPct(document.getElementById('neuron-bias'));
+
+  const terms=w.map((wv,i)=>`${wv.toFixed(2)}·${inputs[i].toFixed(2)}`).join(' + ');
+  document.getElementById('n-z-formula').textContent=`${terms} + ${b.toFixed(2)}`;
+  document.getElementById('n-z-val').textContent=z.toFixed(4);
+  document.getElementById('n-a-val').textContent=a.toFixed(4);
+  const pct=Math.max(0,Math.min(100,(a+2)/4*100));
+  document.getElementById('n-act-bar').style.width=pct+'%';
+
+  // draw canvas
+  const c=document.getElementById('neuron-canvas'); if(!c)return;
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,W,H);
+
+  const neuX=W*0.65, neuY=H/2, nr=32;
+  const n=w.length;
+  const xs=w.map((_,i)=>50);
+  const ys=w.map((_,i)=>H/(n+1)*(i+1));
+
+  // connections
+  w.forEach((wv,i)=>{
+    const thickness=Math.max(0.5,Math.abs(wv)*1.5);
+    const col=wv>0?'rgba(10,124,62,':'rgba(192,57,43,';
+    const alpha=Math.min(0.9,Math.abs(wv)/3+0.2);
+    ctx.beginPath();ctx.moveTo(xs[i]+20,ys[i]);ctx.lineTo(neuX-nr,neuY);
+    ctx.strokeStyle=col+alpha+')';ctx.lineWidth=thickness;ctx.stroke();
+    // weight label
+    const mx=(xs[i]+20+neuX-nr)/2,my=(ys[i]+neuY)/2;
+    ctx.fillStyle=wv>0?'rgba(10,124,62,0.50)':'rgba(192,57,43,0.7)';
+    ctx.font='10px Share Tech Mono';ctx.textAlign='center';
+    ctx.fillText(`w=${wv.toFixed(2)}`,mx,my-5);
+  });
+
+  // input nodes
+  w.forEach((_,i)=>{
+    ctx.beginPath();ctx.arc(xs[i]+10,ys[i],12,0,Math.PI*2);
+    ctx.fillStyle='#e8f7ee';ctx.fill();
+    ctx.strokeStyle='var(--green3)';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle='#3d3830';ctx.font='10px Share Tech Mono';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(`x${i+1}`,xs[i]+10,ys[i]);ctx.textBaseline='alphabetic';
+    ctx.fillStyle='#7c6f60';ctx.font='9px Share Tech Mono';ctx.textAlign='right';
+    ctx.fillText(`=${inputs[i].toFixed(2)}`,xs[i]-2,ys[i]+4);
+  });
+
+  // bias
+  ctx.fillStyle='rgba(255,170,0,0.15)';
+  ctx.beginPath();ctx.arc(neuX,neuY-nr-20,10,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#b45309';ctx.lineWidth=1;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(neuX,neuY-nr-10);ctx.lineTo(neuX,neuY-nr);
+  ctx.strokeStyle='rgba(255,170,0,0.5)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#b45309';ctx.font='9px Share Tech Mono';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(`b=${b.toFixed(2)}`,neuX,neuY-nr-20);ctx.textBaseline='alphabetic';
+
+  // neuron body (glow intensity ∝ activation)
+  const glow=Math.min(1,Math.abs(a));
+  const grad=ctx.createRadialGradient(neuX,neuY,0,neuX,neuY,nr);
+  grad.addColorStop(0,`rgba(10,124,62,${0.3+glow*0.5})`);
+  grad.addColorStop(1,`rgba(10,124,62,0.04)`);
+  ctx.beginPath();ctx.arc(neuX,neuY,nr,0,Math.PI*2);
+  ctx.fillStyle=grad;ctx.fill();
+  ctx.strokeStyle=`rgba(10,124,62,${0.4+glow*0.5})`;ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle='#1c1a17';ctx.font='bold 11px Share Tech Mono';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(`a=${a.toFixed(3)}`,neuX,neuY);ctx.textBaseline='alphabetic';
+
+  // output arrow
+  ctx.beginPath();ctx.moveTo(neuX+nr,neuY);ctx.lineTo(W-10,neuY);
+  ctx.strokeStyle='rgba(10,124,62,0.50)';ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle='rgba(10,124,62,0.50)';
+  ctx.fillText(`${neuronAct}(${z.toFixed(2)})=${a.toFixed(3)}`,W-8,neuY-5);
+
+  // activation label
+  ctx.fillStyle='#7c6f60';ctx.font='9px Share Tech Mono';ctx.textAlign='center';
+  ctx.fillText(neuronAct.toUpperCase(),neuX,neuY+nr+14);
+
+  // axis annotations
+  ctx.fillStyle='rgba(10,124,62,0.65)';ctx.font='8px Share Tech Mono';ctx.textAlign='left';
+  ctx.fillText('inputs →',4,H-6);
+  ctx.textAlign='right';
+  ctx.fillText('→ output',W-4,H-6);
+}
+
+/* ════════════════════════════════════════════════════
+   TAB 3: ACTIVATIONS
+════════════════════════════════════════════════════ */
+const ACT_DESC={
+  relu:'ReLU: max(0,z). Simple, fast, no vanishing gradient for z>0. Dead neurons for z<0 (gradient=0 forever).',
+  lrelu:'Leaky ReLU: z if z>0, else 0.01z. Fixes dead neuron problem with small negative slope.',
+  sigmoid:'Sigmoid: 1/(1+e^-z). Output in (0,1). Saturates at extremes → vanishing gradients. Use in output layer for binary classification.',
+  tanh:'Tanh: (e^z−e^-z)/(e^z+e^-z). Output in (−1,1). Zero-centred, better than sigmoid for hidden layers. Still saturates.',
+  elu:'ELU: z if z>0, else α(e^z−1). Smooth for z<0, mean activation closer to zero. Faster learning.',
+  swish:'Swish: z·σ(z). Self-gated, smooth everywhere. Often outperforms ReLU in deep nets.',
+};
+
+function setActFn(f){
+  actFn=f;
+  ['relu','lrelu','sig','tanh','elu','swish'].forEach(s=>document.getElementById('af-'+s)?.classList.remove('active'));
+  const map={relu:'relu',lrelu:'lrelu',sigmoid:'sig',tanh:'tanh',elu:'elu',swish:'swish'};
+  document.getElementById('af-'+map[f])?.classList.add('active');
+  document.getElementById('af-desc').textContent=ACT_DESC[f]||'';
+  drawActFn();
+}
+let actCanvasInited=false;
+function initActCanvas(){
+  if(actCanvasInited)return;actCanvasInited=true;
+  const c=document.getElementById('act-canvas');if(!c)return;
+  let down=false;
+  function move(e){
+    const r=c.getBoundingClientRect();
+    const cx=((e.touches?e.touches[0].clientX:e.clientX)-r.left)*(c.width/r.width);
+    actZ=(cx/c.width)*16-8;actZ=Math.max(-8,Math.min(8,actZ));
+    drawActFn();
+  }
+  c.addEventListener('mousedown',e=>{down=true;move(e);});
+  c.addEventListener('mousemove',e=>{if(down)move(e);});
+  c.addEventListener('mouseup',()=>down=false);
+  c.addEventListener('touchstart',e=>{move(e);e.preventDefault();},{passive:false});
+  c.addEventListener('touchmove',e=>{move(e);e.preventDefault();},{passive:false});
+}
+
+function drawActFn(){
+  initActCanvas();
+  const c=document.getElementById('act-canvas');if(!c)return;
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height,PAD=36;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,W,H);
+  const iW=W-2*PAD,iH=H-2*PAD;
+  const sx=z=>PAD+(z+8)/16*iW;
+
+  // grid
+  ctx.strokeStyle='rgba(10,124,62,0.08)';ctx.lineWidth=1;
+  [-6,-4,-2,0,2,4,6].forEach(v=>{
+    const x=sx(v);ctx.beginPath();ctx.moveTo(x,PAD);ctx.lineTo(x,H-PAD);ctx.stroke();
+    ctx.fillStyle='#7c6f60';ctx.font='8px Share Tech Mono';ctx.textAlign='center';ctx.fillText(v,x,H-PAD+11);
+  });
+  const yRange=actFn==='relu'||actFn==='elu'||actFn==='lrelu'?[-1,5]:[-1.1,1.1];
+  const sy=v=>PAD+(1-(v-yRange[0])/(yRange[1]-yRange[0]))*iH;
+  [yRange[0],0,(yRange[0]+yRange[1])/2,yRange[1]].forEach(v=>{
+    const y=sy(v);ctx.beginPath();ctx.moveTo(PAD,y);ctx.lineTo(W-PAD,y);ctx.stroke();
+    ctx.fillStyle='#7c6f60';ctx.font='8px Share Tech Mono';ctx.textAlign='right';ctx.fillText(v.toFixed(1),PAD-3,y+3);
+  });
+
+  // zero axes
+  ctx.strokeStyle='rgba(10,124,62,0.15)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(sx(0),PAD);ctx.lineTo(sx(0),H-PAD);ctx.stroke();
+  const y0=sy(0);ctx.beginPath();ctx.moveTo(PAD,y0);ctx.lineTo(W-PAD,y0);ctx.stroke();
+
+  // derivative curve (amber)
+  ctx.beginPath();
+  for(let i=0;i<=300;i++){
+    const z=-8+i*16/300;
+    const d=applyActD(actFn,z);
+    const x=sx(z),y=sy(Math.max(yRange[0],Math.min(yRange[1],d)));
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle='rgba(255,170,0,0.6)';ctx.lineWidth=1.5;ctx.stroke();
+
+  // function curve (green)
+  ctx.beginPath();
+  for(let i=0;i<=300;i++){
+    const z=-8+i*16/300;
+    const f=applyAct(actFn,z);
+    const x=sx(z),y=sy(Math.max(yRange[0],Math.min(yRange[1],f)));
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle='#0a7c3e';ctx.lineWidth=2.5;ctx.stroke();
+
+  // vertical marker
+  const mx=sx(actZ);
+  ctx.beginPath();ctx.moveTo(mx,PAD);ctx.lineTo(mx,H-PAD);
+  ctx.strokeStyle='rgba(0,204,255,0.7)';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);
+
+  const fv=applyAct(actFn,actZ),dv=applyActD(actFn,actZ);
+  // dots
+  ctx.beginPath();ctx.arc(mx,sy(Math.max(yRange[0],Math.min(yRange[1],fv))),6,0,Math.PI*2);ctx.fillStyle='#0a7c3e';ctx.fill();
+  ctx.beginPath();ctx.arc(mx,sy(Math.max(yRange[0],Math.min(yRange[1],dv))),5,0,Math.PI*2);ctx.fillStyle='#b45309';ctx.fill();
+
+  // update panel
+  document.getElementById('af-z-disp').textContent=actZ.toFixed(3);
+  document.getElementById('af-fz-disp').textContent=fv.toFixed(4);
+  document.getElementById('af-dfz-disp').textContent=dv.toFixed(4);
+
+  // axis titles
+  ctx.fillStyle='rgba(10,124,62,0.75)';ctx.font='bold 10px Share Tech Mono';ctx.textAlign='center';
+  ctx.fillText('z  (linear input)',W/2,H-2);
+  ctx.save();ctx.translate(10,PAD+iH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('f(z)  output',0,0);ctx.restore();
+}
+
+function drawActCompare(){
+  const c=document.getElementById('act-compare-canvas');if(!c)return;
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height,PAD=28;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,W,H);
+  const iW=W-2*PAD,iH=H-2*PAD;
+  const sx=z=>PAD+(z+5)/10*iW,sy=v=>PAD+(1-(v+1.5)/3.5)*iH;
+  ctx.strokeStyle='rgba(10,124,62,0.07)';ctx.lineWidth=1;
+  [-4,-2,0,2,4].forEach(v=>{const x=sx(v);ctx.beginPath();ctx.moveTo(x,PAD);ctx.lineTo(x,H-PAD);ctx.stroke();ctx.fillStyle='#a09080';ctx.font='7px Share Tech Mono';ctx.textAlign='center';ctx.fillText(v,x,H-PAD+9);});
+  const fns=[{f:'relu',col:'#0a7c3e'},{f:'sigmoid',col:'#b45309'},{f:'tanh',col:'#1d6fa4'},{f:'lrelu',col:'#ff7fff'},{f:'swish',col:'#ffff00'}];
+  fns.forEach(({f,col})=>{
+    ctx.beginPath();
+    for(let i=0;i<=200;i++){
+      const z=-5+i*10/200;
+      const v=applyAct(f,z);
+      const x=sx(z),y=sy(Math.max(-1.5,Math.min(2,v)));
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.stroke();
+  });
+  // axis titles
+  ctx.fillStyle='rgba(10,124,62,0.75)';ctx.font='bold 9px Share Tech Mono';ctx.textAlign='center';
+  ctx.fillText('z  →',W/2,H-1);
+  ctx.save();ctx.translate(8,PAD+iH/2);ctx.rotate(-Math.PI/2);ctx.fillText('f(z)',0,0);ctx.restore();
+}
+
+/* ════════════════════════════════════════════════════
+   TAB 4: ARCHITECTURE BUILDER
+════════════════════════════════════════════════════ */
+function initArch(){archLayers=[{size:2,act:'input',fixed:true},{size:4,act:'relu'},{size:4,act:'relu'},{size:2,act:'softmax',fixed:true}];}
+function addLayer(){
+  if(archLayers.length>=8){alert('MAX 6 HIDDEN LAYERS');return;}
+  const sz=parseInt(document.getElementById('new-layer-size').value)||4;
+  const act=document.getElementById('new-layer-act').value;
+  archLayers.splice(archLayers.length-1,0,{size:Math.min(32,sz),act});
+  renderArchList();drawArch();
+}
+function removeLayer(){
+  if(archLayers.length<=3){alert('MINIMUM DEPTH REACHED');return;}
+  archLayers.splice(archLayers.length-2,1);
+  renderArchList();drawArch();
+}
+function resetArch(){initArch();renderArchList();drawArch();}
+function renderArchList(){
+  const el=document.getElementById('arch-layer-list');if(!el)return;
+  el.innerHTML=archLayers.map((l,i)=>`
+    <div class="arch-layer-chip">
+      <span class="lname">${l.fixed?(i===0?'INPUT':'OUTPUT'):('HIDDEN_'+i)}</span>
+      <span class="ldetail">${l.size} neurons · ${l.act.toUpperCase()}</span>
+    </div>`).join('');
+}
+function drawArch(){
+  const c=document.getElementById('arch-canvas');if(!c||!archLayers.length)return;
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,W,H);
+  const nL=archLayers.length;
+  const lxs=archLayers.map((_,i)=>60+i*(W-120)/(nL-1));
+  const maxN=Math.max(...archLayers.map(l=>l.size));
+  const nodeR=Math.min(14,Math.floor((H-40)/(maxN*2+1)));
+  const layerColors=['#1d6fa4',...Array(nL-2).fill('#0a7c3e'),'#b45309'];
+
+  // edges (subsample for large layers)
+  archLayers.forEach((l,li)=>{
+    if(li>=nL-1)return;
+    const nl=archLayers[li+1];
+    const showN=Math.min(l.size,6),showM=Math.min(nl.size,6);
+    for(let i=0;i<showN;i++){
+      for(let j=0;j<showM;j++){
+        const y1=H/2+(i-(showN-1)/2)*(H-60)/(maxN+1);
+        const y2=H/2+(j-(showM-1)/2)*(H-60)/(maxN+1);
+        ctx.beginPath();ctx.moveTo(lxs[li],y1);ctx.lineTo(lxs[li+1],y2);
+        ctx.strokeStyle='rgba(10,124,62,0.07)';ctx.lineWidth=1;ctx.stroke();
+      }
+    }
+  });
+
+  // nodes
+  archLayers.forEach((l,li)=>{
+    const showN=Math.min(l.size,8);
+    for(let i=0;i<showN;i++){
+      const y=H/2+(i-(showN-1)/2)*(H-60)/(maxN+1);
+      const grad=ctx.createRadialGradient(lxs[li],y,0,lxs[li],y,nodeR);
+      grad.addColorStop(0,layerColors[li]+'60');grad.addColorStop(1,'transparent');
+      ctx.beginPath();ctx.arc(lxs[li],y,nodeR,0,Math.PI*2);
+      ctx.fillStyle=grad;ctx.fill();
+      ctx.strokeStyle=layerColors[li];ctx.lineWidth=1.5;ctx.stroke();
+    }
+    if(l.size>8){
+      const y=H/2+(7.5-(7)/2)*(H-60)/(maxN+1)+nodeR*3;
+      ctx.fillStyle=layerColors[li];ctx.font='9px Share Tech Mono';ctx.textAlign='center';ctx.fillText(`+${l.size-8} more`,lxs[li],y);
+    }
+    // layer label
+    ctx.fillStyle=layerColors[li];ctx.font='10px Share Tech Mono';ctx.textAlign='center';
+    ctx.fillText(li===0?'IN':li===nL-1?'OUT':`H${li}`,lxs[li],H-8);
+    ctx.fillStyle='#7c6f60';ctx.font='8px Share Tech Mono';
+    ctx.fillText(l.size+'n',lxs[li],H-18);
+    ctx.fillStyle='rgba(90,170,104,0.5)';ctx.font='7px Share Tech Mono';
+    ctx.fillText(l.act.toUpperCase(),lxs[li],H-28);
+  });
+
+  // data-flow label
+  ctx.fillStyle='rgba(10,124,62,0.70)';ctx.font='bold 9px Share Tech Mono';ctx.textAlign='center';
+  ctx.fillText('── DATA FLOW  →  forward pass',W/2,14);
+
+  // summary
+  const total=archLayers.reduce((s,l,i)=>{
+    if(i===0)return 0;
+    return s+archLayers[i-1].size*l.size+l.size;
+  },0);
+  const el=document.getElementById('arch-summary');
+  if(el)el.innerHTML=`<span style="font-size:0.72rem;color:var(--muted);">LAYERS: ${nL} &nbsp;|&nbsp; TOTAL PARAMS: <span style="color:var(--green)">${total.toLocaleString()}</span> &nbsp;|&nbsp; DEPTH: ${nL-2} hidden</span>`;
+}
+
+/* ════════════════════════════════════════════════════
+   NETWORK WEIGHTS INIT & FORWARD
+════════════════════════════════════════════════════ */
+function buildNet(inputSize, hiddenSizes, outputSize, act){
+  const sizes=[inputSize,...hiddenSizes,outputSize];
+  const weights=[],biases=[];
+  for(let l=1;l<sizes.length;l++){
+    const w=[],b=[];
+    const scale=act==='relu'?Math.sqrt(2/sizes[l-1]):Math.sqrt(1/sizes[l-1]);
+    for(let j=0;j<sizes[l];j++){
+      const row=[];
+      for(let i=0;i<sizes[l-1];i++) row.push((Math.random()*2-1)*scale);
+      w.push(row);b.push(0);
+    }
+    weights.push(w);biases.push(b);
+  }
+  return{weights,biases,sizes,act};
+}
+
+function forwardPass(net, x){
+  const acts=[x],zs=[];
+  let a=[...x];
+  const nL=net.weights.length;
+  for(let l=0;l<nL;l++){
+    const z=net.weights[l].map((row,j)=>row.reduce((s,w,i)=>s+w*a[i],0)+net.biases[l][j]);
+    zs.push(z);
+    a=l===nL-1?softmax(z):z.map(v=>applyAct(net.act,v));
+    acts.push(a);
+  }
+  return{acts,zs};
+}
+
+function backwardPass(net, x, yHot, lr){
+  const{acts,zs}=forwardPass(net,x);
+  const nL=net.weights.length;
+  const deltas=Array(nL).fill(null);
+  // output delta (softmax+CE)
+  deltas[nL-1]=acts[nL].map((a,i)=>a-yHot[i]);
+  for(let l=nL-2;l>=0;l--){
+    deltas[l]=Array(net.sizes[l+1]).fill(0).map((_,i)=>{
+      const s=net.weights[l+1].reduce((sum,row,j)=>sum+row[i]*deltas[l+1][j],0);
+      return s*applyActD(net.act,zs[l][i]);
+    });
+  }
+  // update weights
+  for(let l=0;l<nL;l++){
+    net.weights[l]=net.weights[l].map((row,j)=>row.map((w,i)=>w-lr*deltas[l][j]*acts[l][i]));
+    net.biases[l]=net.biases[l].map((b,j)=>b-lr*deltas[l][j]);
+  }
+  return{acts,deltas};
+}
+
+function crossEntropy(probs,yHot){
+  return -yHot.reduce((s,y,i)=>s+y*Math.log(probs[i]+1e-10),0);
+}
+
+/* ════════════════════════════════════════════════════
+   TAB 5: BACKPROP VISUALISER
+════════════════════════════════════════════════════ */
+let bpNet=null, bpX=null, bpResult=null;
+function bpReset(){
+  bpNet=buildNet(2,[4,4],2,'relu');
+  bpX=[Math.random()*2-1,Math.random()*2-1];
+  bpResult=null;
+  drawBP();
+}
+function bpForward(){
+  if(!bpNet)bpNet=buildNet(2,[4,4],2,'relu');
+  bpX=[Math.random()*2-1,Math.random()*2-1];
+  bpResult=forwardPass(bpNet,bpX);
+  drawBP(bpResult.acts,null);
+  document.getElementById('bp-info').innerHTML=`<span style="color:var(--green);font-size:0.75rem;">Forward complete. Output: [${bpResult.acts[bpResult.acts.length-1].map(v=>v.toFixed(3)).join(', ')}]</span>`;
+}
+function bpBackward(){
+  if(!bpNet||!bpX){alert('Run forward pass first.');return;}
+  const target=parseInt(document.getElementById('bp-target').value)||0;
+  const yHot=bpNet.sizes[bpNet.sizes.length-1]===2?[target===0?1:0,target===1?1:0]:[0,1];
+  const{acts,deltas}=backwardPass(bpNet,bpX,yHot,0.05);
+  bpResult={acts,deltas};
+  drawBP(acts,deltas);
+  const loss=crossEntropy(acts[acts.length-1],yHot);
+  document.getElementById('bp-info').innerHTML=`<span style="color:var(--amber);font-size:0.75rem;">Backward complete. Loss=${loss.toFixed(4)}. Weights updated.</span>`;
+}
+
+function drawBP(acts,deltas){
+  const c=document.getElementById('bp-canvas');if(!c)return;
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,W,H);
+  if(!bpNet)return;
+  const sizes=bpNet.sizes;
+  const nL=sizes.length;
+  const lxs=sizes.map((_,i)=>60+i*(W-120)/(nL-1));
+  const maxN=Math.max(...sizes);
+  const nodeR=Math.min(15,Math.floor((H-60)/(maxN*2.5)));
+  const nodeY=(li,j)=>H/2+(j-(sizes[li]-1)/2)*(H-80)/maxN;
+
+  // edges
+  for(let l=0;l<nL-1;l++){
+    for(let j=0;j<sizes[l+1];j++){
+      for(let i=0;i<sizes[l];i++){
+        const w=bpNet.weights[l][j][i];
+        const alpha=Math.min(0.4,Math.abs(w)*0.3+0.05);
+        ctx.beginPath();ctx.moveTo(lxs[l],nodeY(l,i));ctx.lineTo(lxs[l+1],nodeY(l+1,j));
+        if(deltas&&deltas[l]){
+          const dMag=Math.min(1,Math.abs(deltas[l][j])*2);
+          ctx.strokeStyle=`rgba(255,170,0,${dMag*0.6+0.05})`;
+        } else {
+          ctx.strokeStyle=w>0?`rgba(10,124,62,${alpha})`:`rgba(192,57,43,${alpha})`;
+        }
+        ctx.lineWidth=Math.max(0.5,Math.abs(w)*1.2);ctx.stroke();
+      }
+    }
+  }
+
+  // nodes
+  for(let l=0;l<nL;l++){
+    for(let j=0;j<sizes[l];j++){
+      const x=lxs[l],y=nodeY(l,j);
+      let act=0;
+      if(acts&&acts[l]&&acts[l][j]!==undefined) act=acts[l][j];
+      const glow=Math.min(1,Math.abs(act));
+      const col=l===0?'#1d6fa4':l===nL-1?'#b45309':'#0a7c3e';
+      const grad=ctx.createRadialGradient(x,y,0,x,y,nodeR);
+      grad.addColorStop(0,col+(Math.round((0.2+glow*0.8)*255)).toString(16).padStart(2,'0'));
+      grad.addColorStop(1,'transparent');
+      ctx.beginPath();ctx.arc(x,y,nodeR,0,Math.PI*2);
+      ctx.fillStyle=grad;ctx.fill();
+      ctx.strokeStyle=col;ctx.lineWidth=1.5;
+      if(acts)ctx.lineWidth=1+glow*2;
+      ctx.stroke();
+      if(acts){
+        ctx.fillStyle='#fff';ctx.font=`${Math.max(7,nodeR-4)}px Share Tech Mono`;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(act.toFixed(2),x,y);ctx.textBaseline='alphabetic';
+      }
+      if(deltas&&l<nL-1&&deltas[l]&&deltas[l][j]!==undefined){
+        const d=deltas[l][j];
+        ctx.fillStyle='rgba(255,170,0,0.85)';ctx.font='8px Share Tech Mono';ctx.textAlign='center';
+        ctx.fillText(`δ=${d.toFixed(2)}`,x,y-nodeR-4);
+      }
+    }
+    ctx.fillStyle=l===0?'#1d6fa4':l===nL-1?'#b45309':'#7c6f60';
+    ctx.font='9px Share Tech Mono';ctx.textAlign='center';
+    ctx.fillText(l===0?'INPUT':l===nL-1?'OUTPUT':`H${l}`,lxs[l],H-6);
+  }
+  // flow label
+  ctx.fillStyle='rgba(10,124,62,0.65)';ctx.font='8px Share Tech Mono';ctx.textAlign='center';
+  ctx.fillText('─── FORWARD  →  (green glow = activation magnitude)',W/2,H-18);
+  ctx.fillStyle='rgba(255,170,0,0.55)';
+  ctx.fillText('◀  BACKWARD  (amber δ = gradient signal)',W/2,H-8);
+}
+
+/* ════════════════════════════════════════════════════
+   TAB 6: TRAIN — DATASETS
+════════════════════════════════════════════════════ */
+function genDS(name,n=200){
+  const rows=[];
+  if(name==='blobs'){
+    [[2,2,0],[-2,-2,1],[2,-2,0],[-2,2,1]].forEach(([cx,cy,cls])=>{
+      for(let i=0;i<n/4;i++) rows.push({x:cx+(Math.random()-0.5)*2,y:cy+(Math.random()-0.5)*2,cls});
+    });
+  }else if(name==='moons'){
+    for(let i=0;i<n;i++){
+      const t=Math.PI*i/(n/2);
+      if(i<n/2) rows.push({x:Math.cos(t)+(Math.random()-.5)*.35,y:Math.sin(t)+(Math.random()-.5)*.35,cls:0});
+      else rows.push({x:1-Math.cos(t)+(Math.random()-.5)*.35,y:.5-Math.sin(t)+(Math.random()-.5)*.35,cls:1});
+    }
+  }else if(name==='circles'){
+    for(let i=0;i<n;i++){
+      const t=2*Math.PI*Math.random();
+      const r=i<n/2?0.5+(Math.random()-.5)*.15:1.5+(Math.random()-.5)*.2;
+      rows.push({x:r*Math.cos(t),y:r*Math.sin(t),cls:i<n/2?0:1});
+    }
+  }else if(name==='spiral'){
+    for(let i=0;i<n;i++){
+      const t=4*Math.PI*i/n;
+      const r=t/(4*Math.PI);
+      const noise=(Math.random()-.5)*.1;
+      rows.push({x:(r+noise)*Math.cos(t+(i<n/2?0:Math.PI)),y:(r+noise)*Math.sin(t+(i<n/2?0:Math.PI)),cls:i<n/2?0:1});
+    }
+  }else if(name==='xor'){
+    for(let i=0;i<n;i++){
+      const x=(Math.random()-.5)*4,y=(Math.random()-.5)*4;
+      rows.push({x,y,cls:(x*y>0)?0:1});
+    }
+  }
+  return rows;
+}
+
+let tData=[],tNet=null,tHiddenSizes=[16,8];
+let userDataset=null, tFeatures=[], tFeatX='x', tFeatY='y', tClassCol='cls';
+let tPosClass=1;          // internal positive class (always 0 or 1 after mapping)
+let tClassNames=['0','1']; // display names of the two classes
+
+/* ── CSV UPLOAD ── */
+function loadUserCSV(input){
+  const f=input.files[0]; if(!f)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.trim().split(/\r?\n/);
+    const hdrs=lines[0].split(',').map(s=>s.trim().replace(/^"|"$/g,''));
+    const rows=lines.slice(1).map(line=>{
+      const vals=line.split(',').map(s=>s.trim().replace(/^"|"$/g,''));
+      const obj={};hdrs.forEach((h,i)=>{const v=vals[i];obj[h]=isNaN(v)||v===''?v:+v;});
+      return obj;
+    }).filter(r=>Object.values(r).every(v=>v!==undefined&&v!==''));
+    if(rows.length<10){document.getElementById('csv-status').textContent='ERROR: NEED ≥ 10 ROWS';return;}
+    // infer a default response column (last column or first non-numeric)
+    const numCols=hdrs.filter(h=>typeof rows[0][h]==='number');
+    const catCols=hdrs.filter(h=>typeof rows[0][h]!=='number');
+    const defaultResp=catCols.length?catCols[0]:hdrs[hdrs.length-1];
+    userDataset={rows, hdrs, numCols, catCols};
+    // populate response column selector
+    const rsel=document.getElementById('resp-col-sel');
+    rsel.innerHTML=hdrs.map(h=>`<option value="${h}" ${h===defaultResp?'selected':''}>${h}</option>`).join('');
+    document.getElementById('col-selectors').style.display='';
+    document.getElementById('pos-class-example').style.display='none';
+    applyColumnSelections();
+    document.getElementById('csv-status').textContent=`✓ LOADED: ${rows.length} rows · ${hdrs.length} cols`;
+  };
+  reader.readAsText(f);
+}
+
+function onRespColChange(){ applyColumnSelections(); }
+function onPosClassChange(){
+  const sel=document.getElementById('pos-class-sel');
+  tPosClass= +sel.value;   // value is 0 or 1 (internal index)
+  rebuildTData();
+}
+function onPosClassExampleChange(){
+  const sel=document.getElementById('pos-class-example-sel');
+  tPosClass= +sel.value;
+  // tData already mapped; just flip which is "positive"
+  // rebuild dataset with swapped positive
+  const raw=genDS(NN.trainDS,200);
+  buildExampleTData(raw);
+}
+
+function applyColumnSelections(){
+  if(!userDataset)return;
+  const{rows,hdrs}=userDataset;
+  const respCol=document.getElementById('resp-col-sel').value;
+  // features = all numeric cols that are not the response
+  const featCols=hdrs.filter(h=>h!==respCol&&typeof rows[0][h]==='number');
+  if(!featCols.length){document.getElementById('csv-status').textContent='ERROR: NO NUMERIC PREDICTORS FOUND';return;}
+  // unique class values
+  const rawClasses=[...new Set(rows.map(r=>String(r[respCol])))].sort();
+  if(rawClasses.length>10){document.getElementById('csv-status').textContent='ERROR: RESPONSE HAS > 10 LEVELS (binary only)';return;}
+  // populate positive class selector (user picks which level = "positive")
+  const psel=document.getElementById('pos-class-sel');
+  psel.innerHTML=rawClasses.map((c,i)=>`<option value="${i}">${c}</option>`).join('');
+  tPosClass=0;  // default: first class is positive
+  // render predictor checkboxes
+  const box=document.getElementById('predictor-checkboxes');
+  box.innerHTML=featCols.map(f=>`
+    <label style="display:flex;align-items:center;gap:0.25rem;cursor:pointer;">
+      <input type="checkbox" value="${f}" checked style="accent-color:var(--green);width:12px;height:12px;">
+      <span style="font-size:0.7rem;color:var(--text2);">${f}</span>
+    </label>`).join('');
+  // wire checkbox changes
+  box.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',rebuildTData));
+  // store and rebuild
+  userDataset.respCol=respCol;
+  userDataset.rawClasses=rawClasses;
+  userDataset.allFeatCols=featCols;
+  rebuildTData();
+}
+
+function rebuildTData(){
+  if(!userDataset)return;
+  const{rows,rawClasses,respCol,allFeatCols}=userDataset;
+  // selected features
+  const checked=[...document.querySelectorAll('#predictor-checkboxes input:checked')].map(cb=>cb.value);
+  if(!checked.length){alert('SELECT AT LEAST ONE PREDICTOR');return;}
+  tClassNames=[rawClasses[tPosClass],rawClasses[1-tPosClass]];
+  // map: positive class → 1, other → 0
+  const classMap={};
+  rawClasses.forEach((c,i)=>{ classMap[c]= i===tPosClass?1:0; });
+  // normalise
+  const means=checked.map(f=>rows.reduce((s,r)=>s+r[f],0)/rows.length);
+  const stds=checked.map((f,i)=>Math.sqrt(rows.reduce((s,r)=>s+(r[f]-means[i])**2,0)/rows.length)||1);
+  tFeatures=checked;
+  tClassCol='__cls';
+  tData=rows.map(r=>({
+    vec:checked.map((f,i)=>(r[f]-means[i])/stds[i]),
+    x:(r[checked[0]]-means[0])/stds[0],
+    y:(r[checked[Math.min(1,checked.length-1)]]-means[Math.min(1,checked.length-1)])/stds[Math.min(1,checked.length-1)],
+    cls:classMap[String(r[respCol])]??0
+  }));
+  tFeatX=checked[0]; tFeatY=checked[Math.min(1,checked.length-1)];
+  buildFeatVizSelectors(checked);
+  updateDSInfo('UPLOADED: '+userDataset.rows.length+' rows', tData.length, checked, rawClasses);
+  // update positive class display in eval
+  syncPosClassDisplay();
+}
+
+/* ── EXAMPLE DATASETS ── */
+function useExampleDS(name){
+  NN.trainDS=name; userDataset=null;
+  document.getElementById('csv-status').textContent='';
+  document.getElementById('col-selectors').style.display='none';
+  const raw=genDS(name,200);
+  tClassNames=['0','1'];
+  tPosClass=1;
+  // populate positive-class selector for examples
+  const psel=document.getElementById('pos-class-example-sel');
+  psel.innerHTML='<option value="1">1 (default)</option><option value="0">0</option>';
+  psel.value='1';
+  document.getElementById('pos-class-example').style.display='';
+  buildExampleTData(raw);
+  syncPosClassDisplay();
+}
+
+function buildExampleTData(raw){
+  tFeatures=['x','y']; tFeatX='x'; tFeatY='y'; tClassCol='cls';
+  tData=raw.map(d=>({x:d.x,y:d.y,vec:[d.x,d.y],cls: d.cls===tPosClass?1:1-Math.abs(d.cls-tPosClass)}));
+  // simpler: positive class is whatever tPosClass says
+  tData=raw.map(d=>({x:d.x,y:d.y,vec:[d.x,d.y],cls:d.cls===tPosClass?1:0}));
+  buildFeatVizSelectors(['x','y']);
+  const labels={moons:'Two Moons',circles:'Concentric Circles',blobs:'Gaussian Blobs',spiral:'Interleaved Spiral',xor:'XOR Pattern'};
+  updateDSInfo(labels[NN.trainDS]||NN.trainDS, tData.length, ['x','y'], ['0','1']);
+  document.getElementById('feature-selectors').style.display='none';
+}
+
+function buildFeatVizSelectors(feats){
+  if(feats.length<=2){document.getElementById('feature-selectors').style.display='none';return;}
+  document.getElementById('feature-selectors').style.display='';
+  ['feat-x-sel','feat-y-sel'].forEach((id,idx)=>{
+    const el=document.getElementById(id); if(!el)return;
+    el.innerHTML=feats.map((f,i)=>`<option value="${f}" ${i===idx?'selected':''}>${f}</option>`).join('');
+  });
+}
+
+function updateFeatureSelection(){
+  if(!userDataset)return;
+  tFeatX=document.getElementById('feat-x-sel').value;
+  tFeatY=document.getElementById('feat-y-sel').value;
+  tData=tData.map(d=>({...d,
+    x:d.vec[tFeatures.indexOf(tFeatX)]||0,
+    y:d.vec[tFeatures.indexOf(tFeatY)]||0
+  }));
+}
+
+function syncPosClassDisplay(){
+  const el=document.getElementById('eval-pos-display');
+  if(el) el.textContent=tClassNames[0]||'1';
+}
+
+function updateDSInfo(name, n, features, classes){
+  const el=document.getElementById('ds-info'); if(!el)return;
+  el.innerHTML=`<span style="color:var(--green)">${name}</span><br>
+    N=<span style="color:var(--amber)">${n}</span> &nbsp;·&nbsp;
+    Features=<span style="color:var(--blue)">${features.length}</span> &nbsp;·&nbsp;
+    Classes=<span style="color:var(--green)">${classes.length}</span><br>
+    <span style="color:var(--muted)">Positive:</span> <span style="color:var(--amber)">${tClassNames[0]||'1'}</span>
+    &nbsp;·&nbsp; <span style="color:var(--muted)">Negative:</span> <span style="color:var(--text2)">${tClassNames[1]||'0'}</span>`;
+}
+
+function setHiddenLayers(sizes){
+  tHiddenSizes=sizes;
+  [['hl-1',[8]],['hl-2',[16,8]],['hl-3',[16,16,8]],['hl-4',[32,16,8]]].forEach(([id,s])=>
+    document.getElementById(id)?.classList.toggle('active',JSON.stringify(s)===JSON.stringify(sizes)));
+}
+
+function startTraining(){
+  if(!tData.length){alert('LOAD A DATASET FIRST — use an example or upload a CSV');return;}
+  if(trainTimer){clearInterval(trainTimer);trainTimer=null;}
+  const act=document.getElementById('t-act')?.value||'relu';
+  const inputSize=tData[0].vec?tData[0].vec.length:2;
+  tNet=buildNet(inputSize,tHiddenSizes,2,act);
+  NN.losses=[];NN.accs=[];tEpoch=0;NN.trained=false;
+  const bv=document.getElementById('t-batch')?.value||'32';
+  tBatch=bv==='full'?tData.length:parseInt(bv);
+  document.getElementById('train-status-bar').textContent='TRAINING…';
+
+  trainTimer=setInterval(()=>{
+    const batch=[];
+    for(let i=0;i<tBatch;i++) batch.push(tData[Math.floor(Math.random()*tData.length)]);
+    let loss=0;
+    batch.forEach(d=>{
+      const vec=d.vec||[d.x,d.y];
+      const yH=[d.cls===0?1:0,d.cls===1?1:0];
+      const{acts}=backwardPass(tNet,vec,yH,tLR);
+      loss+=crossEntropy(acts[acts.length-1],yH);
+    });
+    loss/=batch.length;
+    const correct=tData.filter(d=>{
+      const vec=d.vec||[d.x,d.y];
+      const{acts}=forwardPass(tNet,vec);
+      const p=acts[acts.length-1];
+      return (p[0]>p[1]?0:1)===d.cls;
+    }).length;
+    const acc=correct/tData.length;
+    NN.losses.push(loss);NN.accs.push(acc);tEpoch++;
+    document.getElementById('t-loss-val').textContent=loss.toFixed(4);
+    document.getElementById('t-acc-val').textContent=(acc*100).toFixed(1)+'%';
+    document.getElementById('t-epoch-val').textContent=tEpoch;
+    drawTLoss();drawTBoundary();
+    if(tEpoch>=2000||loss<0.01){
+      clearInterval(trainTimer);trainTimer=null;NN.trained=true;
+      document.getElementById('train-status-bar').textContent=`> COMPLETE: ${tEpoch} epochs, loss=${loss.toFixed(4)}, acc=${(acc*100).toFixed(1)}%`;
+    }
+  },25);
+}
+
+
+function stopTraining(){
+  if(trainTimer){clearInterval(trainTimer);trainTimer=null;}
+  NN.trained=true;
+  document.getElementById('train-status-bar').textContent='> STOPPED';
+}
+function resetTraining(){
+  stopTraining();tNet=null;NN.losses=[];NN.accs=[];tEpoch=0;
+  document.getElementById('t-loss-val').textContent='—';
+  document.getElementById('t-acc-val').textContent='—';
+  document.getElementById('t-epoch-val').textContent='0';
+  document.getElementById('train-status-bar').textContent='';
+  ['t-loss-canvas','t-bnd-canvas'].forEach(id=>{const c=document.getElementById(id);if(c){const ctx=c.getContext('2d');ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,c.width,c.height);}});
+}
+
+function drawTLoss(){
+  const c=document.getElementById('t-loss-canvas');if(!c)return;
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height,pad={t:12,r:12,b:20,l:42};
+  ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,W,H);
+  const iW=W-pad.l-pad.r,iH=H-pad.t-pad.b;
+  const losses=NN.losses;if(!losses.length)return;
+  const maxL=Math.max(...losses.slice(0,5),0.1),minL=Math.max(0,Math.min(...losses)*0.95);
+  ctx.strokeStyle='rgba(10,124,62,0.08)';ctx.lineWidth=1;
+  [0.25,.5,.75,1].forEach(v=>{const y=pad.t+v*iH;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();ctx.fillStyle='#a09080';ctx.font='7px Share Tech Mono';ctx.textAlign='right';ctx.fillText((maxL-(v*(maxL-minL))).toFixed(3),pad.l-2,y+3);});
+  ctx.beginPath();
+  losses.forEach((l,i)=>{
+    const x=pad.l+(i/(losses.length-1||1))*iW;
+    const y=pad.t+iH-(l-minL)/(maxL-minL||1)*iH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='#0a7c3e';ctx.lineWidth=1.5;ctx.stroke();
+  // acc overlay
+  ctx.beginPath();
+  NN.accs.forEach((a,i)=>{
+    const x=pad.l+(i/(NN.accs.length-1||1))*iW;
+    const y=pad.t+iH-a*iH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='rgba(255,170,0,0.5)';ctx.lineWidth=1.5;ctx.stroke();
+  // axis titles
+  ctx.fillStyle='rgba(10,124,62,0.70)';ctx.font='7px Share Tech Mono';ctx.textAlign='center';
+  ctx.fillText('EPOCH  →',W/2,H-1);
+  ctx.save();ctx.translate(8,pad.t+iH/2);ctx.rotate(-Math.PI/2);ctx.fillText('LOSS / ACC',0,0);ctx.restore();
+}
+
+function drawTBoundary(){
+  const c=document.getElementById('t-bnd-canvas');if(!c||!tNet||!tData.length)return;
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height,PAD=16;
+  ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,W,H);
+  const xs=tData.map(d=>d.x),ys=tData.map(d=>d.y);
+  const xmin=Math.min(...xs)-.3,xmax=Math.max(...xs)+.3;
+  const ymin=Math.min(...ys)-.3,ymax=Math.max(...ys)+.3;
+  const iW=W-2*PAD,iH=H-2*PAD;
+  const toC=(x,y)=>[PAD+(x-xmin)/(xmax-xmin)*iW,PAD+(1-(y-ymin)/(ymax-ymin))*iH];
+  const inputSize=tNet.sizes[0];
+  // for multi-feature data, build a full input vector (other features at 0=mean after normalization)
+  function makeVec(dx,dy){
+    if(inputSize===2)return[dx,dy];
+    // find which feature indices are x and y vis
+    const feats=userDataset?userDataset.features:['x','y'];
+    const xi=feats.indexOf(tFeatX),yi=feats.indexOf(tFeatY);
+    const v=Array(inputSize).fill(0);
+    if(xi>=0)v[xi]=dx;
+    if(yi>=0)v[yi]=dy;
+    return v;
+  }
+  const RES=40;
+  const img=ctx.createImageData(W,H);
+  for(let gx=0;gx<RES;gx++){
+    for(let gy=0;gy<RES;gy++){
+      const dx=xmin+(gx+.5)/RES*(xmax-xmin);
+      const dy=ymin+(gy+.5)/RES*(ymax-ymin);
+      const{acts}=forwardPass(tNet,makeVec(dx,dy));
+      const p=acts[acts.length-1];
+      const cls=p[0]>p[1]?0:1;
+      const conf=Math.max(p[0],p[1]);
+      const px1=Math.round(PAD+gx/RES*iW),py1=Math.round(PAD+(1-(gy+1)/RES)*iH);
+      const pw=Math.ceil(iW/RES)+1,ph=Math.ceil(iH/RES)+1;
+      const alpha=Math.round((conf-.5)*2*60+10);
+      for(let pi=Math.max(0,px1);pi<Math.min(W,px1+pw);pi++){
+        for(let pj=Math.max(0,py1);pj<Math.min(H,py1+ph);pj++){
+          const idx=(pj*W+pi)*4;
+          if(cls===0){img.data[idx]=0;img.data[idx+1]=180;img.data[idx+2]=255;}
+          else{img.data[idx]=255;img.data[idx+1]=51;img.data[idx+2]=51;}
+          img.data[idx+3]=alpha;
+        }
+      }
+    }
+  }
+  ctx.putImageData(img,0,0);
+  tData.forEach(d=>{
+    const[cx,cy]=toC(d.x,d.y);
+    ctx.beginPath();ctx.arc(cx,cy,3.5,0,Math.PI*2);
+    ctx.fillStyle=d.cls===0?'#1d6fa4':'#c0392b';ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=1;ctx.stroke();
+  });
+  // axis titles
+  const xLabel=tFeatX||'Feature 1', yLabel=tFeatY||'Feature 2';
+  ctx.fillStyle='rgba(10,124,62,0.80)';ctx.font='bold 9px Share Tech Mono';ctx.textAlign='center';
+  ctx.fillText(xLabel+' →',W/2,H-3);
+  ctx.save();ctx.translate(8,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('↑ '+yLabel,0,0);ctx.restore();
+  // class legend
+  [[0,'#1d6fa4','Class 0'],[1,'#c0392b','Class 1']].forEach(([c,col,lbl],i)=>{
+    ctx.beginPath();ctx.arc(PAD+8,PAD+10+i*14,4,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    ctx.fillStyle='rgba(28,26,23,0.8)';ctx.font='8px Share Tech Mono';ctx.textAlign='left';
+    ctx.fillText(lbl,PAD+15,PAD+13+i*14);
+  });
+  // update HTML axis label spans
+  const xl=document.getElementById('bnd-xlabel'),yl=document.getElementById('bnd-ylabel');
+  if(xl)xl.textContent=xLabel; if(yl)yl.textContent=yLabel;
+}
+
+/* ════════════════════════════════════════════════════
+   TAB 7: EVALUATE
+════════════════════════════════════════════════════ */
+function runEval(){
+  if(!tNet||!tData.length){alert('TRAIN A MODEL FIRST');return;}
+  syncPosClassDisplay();
+
+  const probs=tData.map(d=>{
+    const vec=d.vec||[d.x,d.y];
+    const{acts}=forwardPass(tNet,vec);
+    return acts[acts.length-1][1]; // probability of class 1 (positive)
+  });
+  const preds=probs.map(p=>p>=0.5?1:0);
+  const y=tData.map(d=>d.cls);
+
+  // binary confusion counts  (positive = class 1)
+  const tp=preds.filter((p,i)=>p===1&&y[i]===1).length;
+  const tn=preds.filter((p,i)=>p===0&&y[i]===0).length;
+  const fp=preds.filter((p,i)=>p===1&&y[i]===0).length;
+  const fn=preds.filter((p,i)=>p===0&&y[i]===1).length;
+  const n=y.length;
+  const acc=(tp+tn)/n;
+  // per-class metrics — class 1 (positive)
+  const p1prec=tp+fp>0?tp/(tp+fp):0;
+  const p1rec =tp+fn>0?tp/(tp+fn):0;
+  const p1f1  =p1prec+p1rec>0?2*p1prec*p1rec/(p1prec+p1rec):0;
+  const p1sup =tp+fn;
+  // per-class metrics — class 0 (negative)
+  const p0prec=tn+fn>0?tn/(tn+fn):0;
+  const p0rec =tn+fp>0?tn/(tn+fp):0;
+  const p0f1  =p0prec+p0rec>0?2*p0prec*p0rec/(p0prec+p0rec):0;
+  const p0sup =tn+fp;
+  // macro averages
+  const macroPrec=(p0prec+p1prec)/2;
+  const macroRec =(p0rec+p1rec)/2;
+  const macroF1  =(p0f1+p1f1)/2;
+
+  NN.predictions=probs.map((p,i)=>({prob1:p,pred:preds[i],actual:y[i]}));
+
+  // summary stats
+  document.getElementById('eval-stats').innerHTML=`
+    <div class="stat-box"><div class="sv" style="color:var(--green)">${(acc*100).toFixed(1)}%</div><div class="sl">ACCURACY</div></div>
+    <div class="stat-box"><div class="sv" style="color:var(--amber)">${macroPrec.toFixed(3)}</div><div class="sl">MACRO PREC</div></div>
+    <div class="stat-box"><div class="sv" style="color:var(--blue)">${macroRec.toFixed(3)}</div><div class="sl">MACRO RECALL</div></div>
+    <div class="stat-box"><div class="sv" style="color:var(--red)">${macroF1.toFixed(3)}</div><div class="sl">MACRO F1</div></div>
+    <div class="stat-box"><div class="sv" style="color:var(--green)">${tp}</div><div class="sl">TRUE POS</div></div>
+    <div class="stat-box"><div class="sv" style="color:var(--red)">${fp}</div><div class="sl">FALSE POS</div></div>
+    <div class="stat-box"><div class="sv" style="color:var(--amber)">${fn}</div><div class="sl">FALSE NEG</div></div>
+    <div class="stat-box"><div class="sv" style="color:var(--blue)">${tn}</div><div class="sl">TRUE NEG</div></div>
+  `;
+
+  // confusion matrix with actual class names
+  const cn0=tClassNames[1]||'Negative', cn1=tClassNames[0]||'Positive';
+  document.getElementById('eval-conf').innerHTML=`
+    <table class="conf-table">
+      <thead><tr>
+        <th class="ch" style="width:90px;">Actual↓ / Pred→</th>
+        <th class="ch">${cn0}</th>
+        <th class="ch">${cn1}</th>
+      </tr></thead>
+      <tbody>
+        <tr><th class="ch">${cn0}</th>
+            <td class="ctn" title="True Negative: correctly predicted ${cn0}">${tn}</td>
+            <td class="cfp" title="False Positive: predicted ${cn1} but was ${cn0}">${fp}</td></tr>
+        <tr><th class="ch">${cn1}</th>
+            <td class="cfn" title="False Negative: predicted ${cn0} but was ${cn1}">${fn}</td>
+            <td class="ctp" title="True Positive: correctly predicted ${cn1}">${tp}</td></tr>
+      </tbody>
+    </table>`;
+
+  // per-class table — correct formulas, named rows
+  document.getElementById('eval-per-class').innerHTML=`
+    <tr>
+      <td style="color:var(--blue);font-weight:700;">${cn0}</td>
+      <td>${p0prec.toFixed(3)}</td>
+      <td>${p0rec.toFixed(3)}</td>
+      <td>${p0f1.toFixed(3)}</td>
+      <td>${p0sup}</td>
+    </tr>
+    <tr>
+      <td style="color:var(--red);font-weight:700;">${cn1} ★</td>
+      <td>${p1prec.toFixed(3)}</td>
+      <td>${p1rec.toFixed(3)}</td>
+      <td>${p1f1.toFixed(3)}</td>
+      <td>${p1sup}</td>
+    </tr>
+    <tr style="border-top:1px solid var(--border2);font-style:italic;">
+      <td style="color:var(--muted);">macro avg</td>
+      <td>${macroPrec.toFixed(3)}</td>
+      <td>${macroRec.toFixed(3)}</td>
+      <td>${macroF1.toFixed(3)}</td>
+      <td>${n}</td>
+    </tr>`;
+  const noteEl=document.getElementById('eval-per-class-note');
+  if(noteEl) noteEl.innerHTML=`<span style="color:var(--amber)">★ positive class</span> &nbsp;·&nbsp; Precision = TP/(TP+FP) &nbsp;·&nbsp; Recall = TP/(TP+FN)`;
+
+  // draw ROC after a frame to ensure canvas is rendered
+  requestAnimationFrame(()=>{ drawROC(probs,y); drawThreshCurve(probs,y); });
+  buildReport(acc,macroPrec,macroRec,macroF1);
+}
+
+function drawROC(probs,y){
+  const c=document.getElementById('eval-roc');
+  if(!c)return;
+  // Force explicit pixel dimensions so canvas has proper size even if flex layout delayed rendering
+  const W=280, H=260;
+  c.width=W; c.height=H;
+  const ctx=c.getContext('2d');
+  const PAD=38;
+  ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,W,H);
+  const iW=W-2*PAD, iH=H-2*PAD;
+
+  // grid lines
+  ctx.strokeStyle='rgba(10,124,62,0.08)';ctx.lineWidth=1;
+  [0,0.25,0.5,0.75,1].forEach(v=>{
+    const gx=PAD+v*iW, gy=PAD+(1-v)*iH;
+    ctx.beginPath();ctx.moveTo(gx,PAD);ctx.lineTo(gx,H-PAD);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(PAD,gy);ctx.lineTo(W-PAD,gy);ctx.stroke();
+  });
+
+  // random-classifier diagonal
+  ctx.beginPath();ctx.moveTo(PAD,H-PAD);ctx.lineTo(W-PAD,PAD);
+  ctx.strokeStyle='rgba(10,124,62,0.15)';ctx.lineWidth=1;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
+
+  // build ROC points
+  const sorted=[...probs.map((p,i)=>({p,y:y[i]}))].sort((a,b)=>b.p-a.p);
+  const nPos=y.filter(v=>v===1).length;
+  const nNeg=y.length-nPos;
+  let tpCum=0,fpCum=0;
+  const pts=[{fpr:0,tpr:0}];
+  sorted.forEach(({p,y:yi})=>{
+    if(yi===1)tpCum++;else fpCum++;
+    pts.push({fpr:nNeg>0?fpCum/nNeg:0,tpr:nPos>0?tpCum/nPos:0});
+  });
+  pts.push({fpr:1,tpr:1});
+
+  // AUC via trapezoid
+  let auc=0;
+  for(let i=1;i<pts.length;i++) auc+=(pts[i].fpr-pts[i-1].fpr)*(pts[i].tpr+pts[i-1].tpr)/2;
+  document.getElementById('eval-auc').textContent=auc.toFixed(3);
+
+  // fill under curve
+  ctx.beginPath();ctx.moveTo(PAD,H-PAD);
+  pts.forEach(({fpr,tpr})=>ctx.lineTo(PAD+fpr*iW, PAD+(1-tpr)*iH));
+  ctx.lineTo(W-PAD,H-PAD);ctx.closePath();
+  ctx.fillStyle='rgba(10,124,62,0.10)';ctx.fill();
+
+  // ROC line
+  ctx.beginPath();
+  pts.forEach(({fpr,tpr},i)=>{
+    const x=PAD+fpr*iW, y2=PAD+(1-tpr)*iH;
+    i===0?ctx.moveTo(x,y2):ctx.lineTo(x,y2);
+  });
+  ctx.strokeStyle='#0a7c3e';ctx.lineWidth=2.5;ctx.stroke();
+
+  // current threshold dot at 0.5
+  const atHalf=pts.reduce((best,pt)=>Math.abs((pt.fpr+pt.tpr)/2-1)<Math.abs((best.fpr+best.tpr)/2-1)?pt:best,pts[0]);
+  ctx.beginPath();ctx.arc(PAD+atHalf.fpr*iW,PAD+(1-atHalf.tpr)*iH,5,0,Math.PI*2);
+  ctx.fillStyle='#b45309';ctx.fill();
+
+  // axis tick labels
+  [0,0.25,0.5,0.75,1].forEach(v=>{
+    ctx.fillStyle='#a09080';ctx.font='7px Share Tech Mono';ctx.textAlign='right';
+    ctx.fillText(v.toFixed(2),PAD-3,PAD+(1-v)*iH+3);
+    ctx.textAlign='center';
+    ctx.fillText(v.toFixed(2),PAD+v*iW,H-PAD+11);
+  });
+
+  // axis titles
+  ctx.fillStyle='rgba(10,124,62,0.80)';ctx.font='8px Share Tech Mono';ctx.textAlign='center';
+  ctx.fillText('False Positive Rate (FPR) →',W/2,H-2);
+  ctx.save();ctx.translate(10,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('↑ True Positive Rate (TPR)',0,0);ctx.restore();
+
+  // AUC label
+  ctx.fillStyle='#b45309';ctx.font='bold 10px Share Tech Mono';ctx.textAlign='left';
+  ctx.fillText('AUC = '+auc.toFixed(3),PAD+4,PAD+14);
+}
+
+function drawThreshCurve(probs,y){
+  const c=document.getElementById('eval-thresh-canvas');if(!c)return;
+  const ctx=c.getContext('2d');
+  const W=c.width,H=c.height;
+  const pad={t:12,r:12,b:22,l:36};
+  ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,W,H);
+  const iW=W-pad.l-pad.r,iH=H-pad.t-pad.b;
+  const ths=Array.from({length:101},(_,i)=>i/100);
+  const curves={prec:[],rec:[],f1:[]};
+  ths.forEach(t=>{
+    const tp2=probs.filter((p,i)=>p>=t&&y[i]===1).length;
+    const fp2=probs.filter((p,i)=>p>=t&&y[i]===0).length;
+    const fn2=probs.filter((p,i)=>p<t&&y[i]===1).length;
+    const pr=tp2+fp2>0?tp2/(tp2+fp2):1;
+    const re=tp2+fn2>0?tp2/(tp2+fn2):0;
+    const ff=pr+re>0?2*pr*re/(pr+re):0;
+    curves.prec.push(pr);curves.rec.push(re);curves.f1.push(ff);
+  });
+  // grid
+  ctx.strokeStyle='rgba(10,124,62,0.07)';ctx.lineWidth=1;
+  [0,0.5,1].forEach(v=>{
+    const gy=pad.t+(1-v)*iH;
+    ctx.beginPath();ctx.moveTo(pad.l,gy);ctx.lineTo(W-pad.r,gy);ctx.stroke();
+    ctx.fillStyle='#a09080';ctx.font='7px Share Tech Mono';ctx.textAlign='right';
+    ctx.fillText(v.toFixed(1),pad.l-2,gy+3);
+  });
+  // curves
+  [{data:curves.prec,col:'#0a7c3e'},{data:curves.rec,col:'#b45309'},{data:curves.f1,col:'#1d6fa4'}].forEach(({data,col})=>{
+    ctx.beginPath();
+    data.forEach((v,i)=>{
+      const x=pad.l+(i/100)*iW, y2=pad.t+(1-v)*iH;
+      i===0?ctx.moveTo(x,y2):ctx.lineTo(x,y2);
+    });
+    ctx.strokeStyle=col;ctx.lineWidth=1.6;ctx.stroke();
+  });
+  // threshold 0.5 marker
+  const mx=pad.l+0.5*iW;
+  ctx.beginPath();ctx.moveTo(mx,pad.t);ctx.lineTo(mx,H-pad.b);
+  ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);
+  // axis
+  ctx.fillStyle='rgba(10,124,62,0.70)';ctx.font='7px Share Tech Mono';ctx.textAlign='center';
+  ctx.fillText('Classification Threshold →',W/2,H-1);
+}
+
+/* ════════════════════════════════════════════════════
+   EXPORT
+════════════════════════════════════════════════════ */
+function exportWeights(){
+  if(!tNet){alert('TRAIN FIRST');return;}
+  const rows=[['layer','neuron_out','neuron_in','weight']];
+  tNet.weights.forEach((W2,l)=>W2.forEach((row,j)=>row.forEach((w,i)=>rows.push([l,j,i,w.toFixed(6)]))));
+  dl(rows,'nn_weights.csv');
+}
+function exportPreds(){
+  if(!NN.predictions.length){alert('RUN EVAL FIRST');return;}
+  dl([['prob_class1','predicted','actual'],...NN.predictions.map(p=>[p.prob1.toFixed(6),p.pred,p.actual])],'nn_predictions.csv');
+}
+function exportData(){
+  dl([['x','y','class'],...tData.map(d=>[d.x.toFixed(4),d.y.toFixed(4),d.cls])],'nn_data.csv');
+}
+function dl(rows,name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'}));
+  a.download=name;a.click();
+}
+
+function buildReport(acc,prec,rec,f1){
+  if(!tNet)return;
+  const p=tNet.sizes.reduce((s,v,i)=>i===0?s:s+(tNet.sizes[i-1]*v+v),0);
+  document.getElementById('export-body').innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-box"><div class="sv" style="color:var(--green)">${tData.length}</div><div class="sl">SAMPLES</div></div>
+      <div class="stat-box"><div class="sv" style="color:var(--amber)">${tNet.sizes.length-2}</div><div class="sl">HIDDEN LAYERS</div></div>
+      <div class="stat-box"><div class="sv" style="color:var(--blue)">${p.toLocaleString()}</div><div class="sl">PARAMETERS</div></div>
+      ${acc!==undefined?`<div class="stat-box"><div class="sv" style="color:var(--green)">${(acc*100).toFixed(1)}%</div><div class="sl">ACCURACY</div></div>`:''}
+    </div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;line-height:2;color:var(--text2);">
+      DATASET: ${NN.trainDS.toUpperCase()} · SAMPLES: ${tData.length}<br>
+      ARCHITECTURE: [${tNet.sizes.join(' → ')}]<br>
+      ACTIVATION: ${tNet.act.toUpperCase()}<br>
+      EPOCHS: ${tEpoch} · LR: ${tLR.toFixed(5)}<br>
+      FINAL LOSS: ${NN.losses[NN.losses.length-1]?.toFixed(4)||'—'}<br>
+      ${acc!==undefined?`ACCURACY: ${(acc*100).toFixed(2)}% · PRECISION: ${(prec*100).toFixed(2)}% · RECALL: ${(rec*100).toFixed(2)}% · F1: ${f1.toFixed(4)}`:''}
+    </div>
+  `;
+}
+
+/* ════════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════════ */
+window.onload=()=>{
+  initArch();renderArchList();drawArch();
+  buildNeuronSliders();
+  updateSliderPct(document.getElementById('neuron-bias'));
+  drawNeuron();
+  setActFn('relu');drawActCompare();
+  bpReset();
+  useExampleDS('moons');
+  updateSliderPct(document.getElementById('t-lr'));
+  initGlossaryTooltips();
+};
+
+/* ════════════════════════════════════════════════════
+   GLOBAL TOOLTIP ENGINE
+   — renders a single fixed-position div at the cursor,
+     completely outside any overflow/sticky/z-index context.
+════════════════════════════════════════════════════ */
+function initGlossaryTooltips() {
+  const tip = document.getElementById('global-tooltip');
+  if (!tip) return;
+
+  let hideTimer = null;
+  let currentTerm = null;
+
+  /* Keep tooltip visible while mouse is inside it */
+  tip.addEventListener('mouseenter', () => {
+    clearTimeout(hideTimer);
+  });
+  tip.addEventListener('mouseleave', () => {
+    scheduleHide();
+  });
+
+  function scheduleHide(delay = 180) {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hideTip, delay);
+  }
+
+  function hideTip() {
+    tip.classList.remove('visible', 'arrow-down', 'arrow-up');
+    currentTerm = null;
+  }
+
+  function showTip(termEl, e) {
+    clearTimeout(hideTimer);
+    if (currentTerm === termEl && tip.classList.contains('visible')) return;
+    currentTerm = termEl;
+
+    /* Extract content from the hidden .term-tip child */
+    const inner = termEl.querySelector('.term-tip');
+    if (!inner) return;
+    tip.innerHTML = inner.innerHTML;
+
+    const TW = 252, TH_EST = 140; /* estimated tooltip height */
+    const VW = window.innerWidth, VH = window.innerHeight;
+    const GAP = 12;
+
+    /* Anchor to the term element's bounding rect, not the cursor,
+       so it stays stable as the mouse moves within the term */
+    const rect = termEl.getBoundingClientRect();
+    const anchorCX = Math.max(TW / 2 + 8, Math.min(VW - TW / 2 - 8,
+                               rect.left + rect.width / 2));
+
+    let top, arrowDir, arrowLeft;
+
+    /* Try above first */
+    if (rect.top - TH_EST - GAP > 0) {
+      top = rect.top - TH_EST - GAP;
+      arrowDir = 'arrow-down';
+    } else {
+      top = rect.bottom + GAP;
+      arrowDir = 'arrow-up';
+    }
+
+    const left = Math.max(8, Math.min(VW - TW - 8, anchorCX - TW / 2));
+    arrowLeft = anchorCX - left;
+
+    tip.style.left  = left + 'px';
+    tip.style.top   = top  + 'px';
+    tip.style.setProperty('--arrow-left', arrowLeft + 'px');
+    tip.classList.remove('arrow-down', 'arrow-up');
+    tip.classList.add(arrowDir, 'visible');
+  }
+
+  /* Delegate: listen on document for all .term elements */
+  document.addEventListener('mouseenter', e => {
+    const term = e.target.closest('.term');
+    if (term) showTip(term, e);
+  }, true);
+
+  document.addEventListener('mouseleave', e => {
+    const term = e.target.closest('.term');
+    if (term) scheduleHide();
+  }, true);
+
+  /* Hide on scroll or tab switch */
+  document.addEventListener('scroll', () => scheduleHide(0), true);
+  document.querySelectorAll('.tabbar button').forEach(btn =>
+    btn.addEventListener('click', () => scheduleHide(0))
+  );
+}
+</script>
+</body>
+</html>
